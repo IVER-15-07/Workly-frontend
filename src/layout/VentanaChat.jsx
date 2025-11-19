@@ -1,4 +1,4 @@
-import React from 'react'
+
 import Sidebar from '../components/Sidebar.jsx'
 
 const VentanaChat = () => {
@@ -10,6 +10,9 @@ const VentanaChat = () => {
         />
 
         <main>
+          <div>
+            <h1> hoa  soy el chat </h1>
+          </div>
 
 
             

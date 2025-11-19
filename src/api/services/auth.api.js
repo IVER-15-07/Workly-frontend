@@ -1,7 +1,7 @@
 import axiosInstance from "../../../helpers/axios-config";
 
 export const authService = {
-   async register(datosUsuario) {
+    async register(datosUsuario) {
         try {
             const response = await axiosInstance.post('/api/auth/register', datosUsuario);
             return response.data;
@@ -11,7 +11,7 @@ export const authService = {
     },
 
     async login(credenciales) {
-      try {
+        try {
             const response = await axiosInstance.post('/api/auth/login', credenciales);
 
             if (response.data.success) {
@@ -23,5 +23,9 @@ export const authService = {
         } catch (error) {
             throw new Error(error.response?.data?.message || 'Error al iniciar sesión');
         }
+    },
+
+    isAuthenticated() {
+        return !!localStorage.getItem('userToken');
     },
 };  

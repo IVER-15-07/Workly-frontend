@@ -26,8 +26,8 @@ const Login = () => {
       if (usuario) localStorage.setItem("user", JSON.stringify(usuario));
 
       setMsg("Inicio de sesión correcto");
-      // redirigir a la app principal
-      setTimeout(() => navigate("/app"), 400);
+    
+      setTimeout(() => navigate("/chat"), 400);
     } catch (err) {
       setMsg(err.message || "Error al iniciar sesión");
     } finally {
