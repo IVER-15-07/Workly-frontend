@@ -1,52 +1,97 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../api/services/auth.api"; 
+import { authService } from "../api/services/auth.api";
+import { firebaseAuthService } from "../api/services/firebase.api";
 
 const Login = () => {
- const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+
+  const handleGoogleLogin = async () => {
     setLoading(true);
     setMsg(null);
+
     try {
-      // Llamada a tu endpoint /api/auth/login
-      const res = await authService.login({ email, contrasena });
-      // authService.login puede guardar localStorage internamente;
-      // por si no, lo guardamos aquí si viene en res.data / res
-      const data = res?.data ?? res;
-      const token = data?.data?.token || data?.token || data?.token;
-      const usuario = data?.data?.usuario || data?.usuario || data?.usuario;
+      const firebaseResult = await firebaseAuthService.loginWithGoogle();
 
-      if (token) localStorage.setItem("userToken", token);
-      if (usuario) localStorage.setItem("user", JSON.stringify(usuario));
+      if (!firebaseResult.success) {
+        setMsg(firebaseResult.message || "Error con Google");
+        return;
+      }
 
-      setMsg("Inicio de sesión correcto");
-    
-      setTimeout(() => navigate("/chat"), 400);
+      // Lo que Firebase devuelve
+      const { idToken } = firebaseResult.data;
+
+      // Enviar al backend
+      const response = await authService.firebaseLogin({
+        idToken,
+        // Si necesitas asignar rol fijo, defínelo:
+        roleId: 5, // por ejemplo usuario normal
+      });
+
+      if (response.success) {
+        const usuario = response.data.usuario;
+
+        // Guardar si deseas
+        if (response.data.token) {
+          localStorage.setItem("userToken", response.data.token);
+        }
+        localStorage.setItem("user", JSON.stringify(usuario));
+
+        // Redirección simple
+        navigate("/chat");
+      }
     } catch (err) {
-      setMsg(err.message || "Error al iniciar sesión");
+      setMsg(err?.message || "Error con Google");
     } finally {
       setLoading(false);
     }
   };
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMsg(null);
+
+    try {
+      const res = await authService.login({ email, contrasena });
+
+      const data = res?.data ?? res;
+      const token = data?.data?.token;
+      const usuario = data?.data?.usuario;
+
+      if (token) localStorage.setItem("userToken", token);
+      if (usuario) localStorage.setItem("user", JSON.stringify(usuario));
+
+      setMsg("Inicio de sesión correcto");
+
+      setTimeout(() => navigate("/chat"), 400);
+    } catch (err) {
+      setMsg(err?.message || "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white shadow rounded-lg p-6">
         <h1 className="text-2xl font-semibold mb-4">Iniciar sesión</h1>
 
-        {/* Botón Google deshabilitado por ahora */}
+
         <button
-          disabled
-          className="w-full py-2 mb-4 rounded border border-gray-200 bg-white text-gray-400 flex items-center justify-center gap-2 cursor-not-allowed"
-          title="Google login deshabilitado (usa tu endpoint por ahora)"
+          onClick={handleGoogleLogin}
+          className="w-full py-2 mb-4 rounded border border-gray-200 bg-white text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-100 transition"
+          disabled={loading}
         >
-          Iniciar con Google (deshabilitado)
+          <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" />
+          Iniciar con Google
         </button>
 
         <div className="text-center text-sm text-gray-400 mb-4">o con correo</div>
@@ -84,8 +129,8 @@ const Login = () => {
         </div>
       </div>
     </div>
+  );
+};
 
-    )
-}
+export default Login;
 
-export default Login
