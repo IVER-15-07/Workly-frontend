@@ -1,4 +1,6 @@
+
 import axiosInstance from "../../../helpers/axios-config";
+
 
 export const authService = {
     async register(datosUsuario) {
@@ -22,6 +24,19 @@ export const authService = {
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || 'Error al iniciar sesión');
+        }
+    },
+
+    async loginfirebase(idToken) {
+        try {
+            const response = await axiosInstance.post('/api/auth/login-firebase', { idToken });
+            if (response.data.success) {
+                localStorage.setItem('userToken', response.data.data.token);
+                localStorage.setItem('user', JSON.stringify(response.data.data.usuario));
+                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
+            }
+        } catch (error) {
+            throw new Error(error.response?.data?.message || 'Error al iniciar sesión con Firebase');
         }
     },
 
