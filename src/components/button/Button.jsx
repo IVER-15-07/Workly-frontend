@@ -33,18 +33,17 @@ const getSizeClasses = (size) => {
 };
 
 
-const TextIconButton = ({
-  text,
-  icon,
+const Button = ({
   variant = VARIANTS.primary,
   size = SIZES.medium,
   disabled = false,
+  children,
   onClick,
   type = "button",
   className = "",
   ...rest
 }) => {
-  const baseClasses = "inline-flex items-center gap-2 font-sans font-bold border-none rounded-button cursor-pointer transition-all duration-300";
+  const baseClasses = "inline-flex items-center justify-center gap-2 font-sans font-bold border-none rounded-button cursor-pointer transition-all duration-300";
   const variantClasses = getVariantClasses(variant);
   const sizeClasses = getSizeClasses(size);
   const disabledClasses = disabled ? "opacity-60 cursor-not-allowed" : "hover:translate-y-[-2px] hover:shadow-lg active:translate-y-0";
@@ -57,28 +56,28 @@ const TextIconButton = ({
       className={`${baseClasses} ${variantClasses} ${sizeClasses} ${disabledClasses} ${className}`}
       {...rest}
     >
-      {icon && <span className="flex items-center justify-center">{icon}</span>}
-      {text}
+      {children}
     </button>
   );
 };
 
-TextIconButton.propTypes = {
-  text: PropTypes.string.isRequired,
-  icon: PropTypes.node,
+Button.propTypes = {
   variant: PropTypes.oneOf(Object.values(VARIANTS)),
   size: PropTypes.oneOf(Object.values(SIZES)),
   disabled: PropTypes.bool,
+  children: PropTypes.node.isRequired,
   onClick: PropTypes.func,
   type: PropTypes.oneOf(["button", "submit", "reset"]),
   className: PropTypes.string,
 };
 
-export { TextIconButton };
+export { Button };
 
 //ejemplos
 /*
-<TextIconButton text="Guardar" icon={<Save size={20} />} />
-<TextIconButton text="Eliminar" icon={<Trash size={20} />} variant="danger" size="small" />
-<TextIconButton text="Cargar" icon={<Upload size={20} />} variant="secondary" />
+
+<Button>Crear Cuenta</Button>
+<Button variant="secondary" size="small">Cancelar</Button>
+<Button variant="danger" size="large" disabled>Eliminar</Button>
+<Button type="submit">Enviar</Button>
 */
