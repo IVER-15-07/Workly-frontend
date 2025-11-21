@@ -1,7 +1,7 @@
 import styled from "styled-components";
 
-const StyledButton = styled.button`
-  display: flex;
+const StyledButton = styled.button
+`  display: flex;
   align-items: center;
   gap: 8px; /* espacio entre icono y texto */
   background-color: ${({ bgColor }) => bgColor || "transparent"};
@@ -36,3 +36,4 @@ const TextIconButton = ({ text, icon, bgColor, textColor, shape, onClick }) => {
 };
 
 export default TextIconButton;
+//button con texto e icono, recibe props para personalizar colores, forma y manejador de click
