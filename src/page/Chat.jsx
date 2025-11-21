@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import {  socket,
+import {
+  socket,
   connect,
   disconnect,
   joinConversation,
@@ -9,9 +10,15 @@ import {  socket,
   onError,
 } from "../api/socket";
 import { conversationService } from "../api/services/conversation.api";
+import IconButton from "../components/button/IconButton.jsx";
+import TextButton from "../components/button/TextButton.jsx";
+import TextIconButton from "../components/button/TextIconButton.jsx";
+import { useTheme } from "styled-components";
+import { FiSend } from "react-icons/fi";
 
 const Chat = () => {
-    const [me, setMe] = useState(1);
+  const theme = useTheme();
+  const [me, setMe] = useState(1);
   const [other, setOther] = useState(2);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -19,8 +26,22 @@ const Chat = () => {
 
   useEffect(() => {
     // listeners
-    onConversationHistory((hist) => setMessages(hist || []));
-    onReceiveMessage((msg) => setMessages((m) => [...m, msg]));
+    // Ensure messages always have a stable `id` before storing them.
+    onConversationHistory((hist) =>
+      setMessages(
+        (hist || []).map((ms) =>
+          ms && ms.id
+            ? ms
+            : { ...(ms || {}), id: String(Date.now()) + "-" + Math.random().toString(36).slice(2), creadoEn: ms && ms.creadoEn ? ms.creadoEn : Date.now() }
+        )
+      )
+    );
+
+    onReceiveMessage((msg) => {
+      const withId = msg && msg.id ? msg : { ...(msg || {}), id: String(Date.now()) + "-" + Math.random().toString(36).slice(2) };
+      if (!withId.creadoEn) withId.creadoEn = Date.now();
+      setMessages((m) => [...m, withId]);
+    });
     onError((e) => console.error("WS error:", e));
 
     return () => {
@@ -44,7 +65,13 @@ const Chat = () => {
 
       // 2. Cargar mensajes históricos
       const msgs = await conversationService.getMessages(conv.id);
-      setMessages(msgs || []);
+      setMessages(
+        (msgs || []).map((ms) =>
+          ms && ms.id
+            ? ms
+            : { ...(ms || {}), id: String(Date.now()) + "-" + Math.random().toString(36).slice(2), creadoEn: ms && ms.creadoEn ? ms.creadoEn : Date.now() }
+        )
+      );
 
       // 3. Reconectar socket limpio y unirse a la room
       disconnect();
@@ -70,7 +97,7 @@ const Chat = () => {
     setText("");
   }
   return (
-     <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-2xl mx-auto">
       <h1 className="text-xl font-bold mb-4">Workly - Chat demo</h1>
 
       <div className="mb-4 flex gap-2">
@@ -109,13 +136,13 @@ const Chat = () => {
         ) : (
           messages.map((m) => (
             <div
-              key={m.id || Math.random()}
+              key={m.id}
               className={`mb-2 ${m.remitenteId === me ? "text-right" : "text-left"}`}
             >
               <div className="text-sm text-gray-600">User {m.remitenteId}</div>
               <div className="inline-block rounded px-3 py-1 bg-gray-100">{m.contenido}</div>
               <div className="text-xs text-gray-400">
-                {new Date(m.creadoEn || Date.now()).toLocaleTimeString()}
+                {new Date(m.creadoEn).toLocaleTimeString()}
               </div>
             </div>
           ))
@@ -130,9 +157,14 @@ const Chat = () => {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
         />
-        <button onClick={handleSend} className="px-3 py-1 bg-green-600 text-white rounded">
+        <IconButton onClick={handleSend}
+          bgColor={theme.colors.primary}
+          iconColor="#fff"
+          shape={theme.shapes.buttonRadius}
+          icon={<FiSend />}
+          >
           Enviar
-        </button>
+        </IconButton>
       </div>
     </div>
   )

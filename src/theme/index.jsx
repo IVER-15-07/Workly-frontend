@@ -1,4 +1,4 @@
-import colors from "./colors";
+import colors from "./color";
 import typography from "./typography";
 import shapes from "./shapes";
 
