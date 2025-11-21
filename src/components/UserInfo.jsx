@@ -1,19 +1,40 @@
-const UserInfo = ({ user = { nombre: 'Usuario_123', email: 'usuario@gmail.com', avatarUrl: null } }) => {
+import TextButton from './button/TextButton';
+import typography from '../theme/typography';
+
+const UserInfo = ({ user = { nombre: 'Usuario_123', email: 'usuario@gmail.com', avatarUrl: null }, onLogout }) => {
   return (
-    <div className="w-full max-w-xs text-center">
-      <div className="w-40 h-40 rounded-full overflow-hidden mx-auto bg-white mb-4">
-        {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl text-gray-600">{(user.nombre || 'U').slice(0, 1)}</div>
-        )}
+    <div className="w-full h-screen flex flex-col">
+      {/* Encabezado */}
+      <div className="pt-6 pb-4">
+        <p style = {typography.text.large} className="text-xl font-semibold text-gray-800 text-center">INFORMACIÓN DEL USUARIO</p>
+      </div>
+      
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col items-center justify-start pt-4">
+        <div className="w-55 h-55 rounded-full overflow-hidden bg-white mb-4">
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="avatar" className="w-40 h-40 object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-6xl text-gray-600">
+              {(user.nombre || 'U').slice(0, 1)}
+            </div>
+          )}
+        </div>
+
+        <h3 style = {typography.text.large} className="text-xl font-semibold text-gray-800 mb-1">{user.nombre}</h3>
+        <p style = {typography.text.medium} className="text-sm text-gray-500">{user.email}</p>
       </div>
 
-      <h3 className="text-lg font-semibold">{user.nombre}</h3>
-      <p className="text-sm text-gray-500 mb-6">{user.email}</p>
-
-      <div className="mt-auto w-full">
-        <button type="button" className="w-full py-2 bg-gray-800 text-white rounded-full">Cerrar Sesión</button>
+      {/* Botón en la parte inferior */}
+      <div className="w-full flex justify-center pb-8">
+        <TextButton
+          text="Cerrar Sesión"
+          bgColor="#1f2937"
+          textColor="#ffffff"
+          shape="9999px"
+          onClick={onLogout}
+          style={typography.button.boldMedium}
+        />
       </div>
     </div>
   );
