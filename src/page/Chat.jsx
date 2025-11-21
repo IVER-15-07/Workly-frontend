@@ -13,11 +13,9 @@ import { conversationService } from "../api/services/conversation.api";
 import IconButton from "../components/button/IconButton.jsx";
 import TextButton from "../components/button/TextButton.jsx";
 import TextIconButton from "../components/button/TextIconButton.jsx";
-import { useTheme } from "styled-components";
 import { FiSend } from "react-icons/fi";
 
 const Chat = () => {
-  const theme = useTheme();
   const [me, setMe] = useState(1);
   const [other, setOther] = useState(2);
   const [conversation, setConversation] = useState(null);
@@ -158,11 +156,11 @@ const Chat = () => {
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
         />
         <IconButton onClick={handleSend}
-          bgColor={theme.colors.primary}
-          iconColor="#fff"
-          shape={theme.shapes.buttonRadius}
+          bgColor={bgColor}
+          iconColor={iconColor}
+          shape={shape}
           icon={<FiSend />}
-          >
+        >
           Enviar
         </IconButton>
       </div>
