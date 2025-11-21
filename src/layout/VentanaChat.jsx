@@ -1,10 +1,11 @@
-
+import { useTheme } from 'styled-components';
 import { useState } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Chat from '../page/Chat.jsx';
 import UserInfo from '../components/UserInfo.jsx';
 
 const VentanaChat = () => {
+  const theme = useTheme();
   const [chats] = useState([]);
   const [currentUser] = useState(() => {
     try {
@@ -24,7 +25,13 @@ const VentanaChat = () => {
   };
 
   return (
-    <div className="h-screen min-h-screen flex bg-gray-50">
+    <div
+      className="h-screen min-h-screen flex"
+      style={{
+        // Degradado diagonal entre color primario y secundario del theme
+        background: `linear-gradient(75deg, ${theme?.colors?.primary || '#547792'} 0%, ${theme?.colors?.secondary || '#ECEFCA'} 100%)`
+      }}
+    >
       {/* Left: Sidebar */}
       <aside className="w-96 min-w-[20rem] border-r bg-white hidden sm:flex flex-col">
         <Sidebar currentUser={currentUser} chats={chats} selectedChatId={null} onSelect={handleSelect} onNewChat={handleNewChat} />

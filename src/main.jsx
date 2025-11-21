@@ -9,10 +9,9 @@ import theme from './theme'
 createRoot(document.getElementById('root')).render(
 
   <BrowserRouter>
-      <ThemeProvider theme={theme}>
-      <App />
-    </ThemeProvider>
+    <ThemeProvider theme={theme}>
     <App />
+    </ThemeProvider>
   </BrowserRouter>
 
 )
