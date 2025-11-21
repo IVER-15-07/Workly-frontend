@@ -10,11 +10,11 @@ const UserInfo = ({ user = { nombre: 'Usuario_123', email: 'usuario@gmail.com', 
 
       {/* Contenido principal */}
       <div className="flex-1 flex flex-col items-center justify-start pt-4">
-        <div className="w-55 h-55 rounded-full overflow-hidden bg-light mb-4">
+        <div className="w-55 h-55 rounded-full overflow-hidden bg-white mb-4">
           {user.avatarUrl ? (
             <img src={user.avatarUrl} alt="avatar" className="w-40 h-40 object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-6xl text-primary">
+            <div className="w-full h-full flex items-center justify-center text-6xl text-gray-600">
               {(user.nombre || 'U').slice(0, 1)}
             </div>
           )}
@@ -27,11 +27,12 @@ const UserInfo = ({ user = { nombre: 'Usuario_123', email: 'usuario@gmail.com', 
       {/* Botón en la parte inferior */}
       <div className="w-full flex justify-center pb-8">
         <Button
-          variant="danger"
-          size="medium"
+          bgColor="bg-black"
+          textColor="text-white"
+          borderRadius="rounded-full"
           onClick={onLogout}
-          className="rounded-full"
-        >Cerrar Sesión
+        >
+          Cerrar Sesión
         </Button>
       </div>
     </div>

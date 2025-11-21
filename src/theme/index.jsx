@@ -130,3 +130,56 @@ export const getTailwindConfig = (themeObj) => ({
 });
 
 export default theme;
+
+
+//ejemplos
+/*
+// Colores primarios
+<div className="bg-primary text-light p-4 rounded-card">Primario</div>
+<button className="bg-secondary text-black">Secundario</button>
+<div className="bg-error text-light">Error</div>
+<div className="bg-card text-black">Card</div>
+
+// Neutrales
+<p className="text-black">Texto negro</p>
+<p className="text-neutral-2">Texto neutral</p>
+<div className="border-2 border-neutral-1">Borde gris claro</div>
+<div className="bg-light">Fondo blanco</div>
+-----------------------------------------
+***Tipografias****
+h1 className="text-display-xl font-bold text-black">
+  Título Extra Grande (128px)
+</h1>
+
+<h2 className="text-display-lg text-primary">
+  Título Grande (64px)
+</h2>
+
+<h3 className="text-display-md font-bold text-black">
+  Título Medio (48px)
+</h3>
+--------------------------------------------
+***Borde***
+<h1 className="text-display-xl font-bold text-black">
+  Título Extra Grande (128px)
+</h1>
+
+<h2 className="text-display-lg text-primary">
+  Título Grande (64px)
+</h2>
+
+<h3 className="text-display-md font-bold text-black">
+  Título Medio (48px)
+</h3>
+
+***COMBINACIONES
+<input
+  className="w-full px-4 py-2 border-2 border-neutral-1 rounded-input text-text-base text-black bg-light placeholder-neutral-2 focus:outline-none focus:border-primary"
+  placeholder="Tu nombre"
+/>
+
+<select className="px-3 py-2 border-2 border-neutral-1 rounded-input text-text-base text-black bg-card focus:outline-none focus:border-primary">
+  <option>Opción 1</option>
+  <option>Opción 2</option>
+</select>
+*/

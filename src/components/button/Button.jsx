@@ -32,7 +32,6 @@ const getSizeClasses = (size) => {
   return sizes[size] || sizes.medium;
 };
 
-
 const Button = ({
   variant = VARIANTS.primary,
   size = SIZES.medium,
@@ -41,19 +40,36 @@ const Button = ({
   onClick,
   type = "button",
   className = "",
+  bgColor = null,
+  textColor = null,
+  borderRadius = null,
+  opacity = null,
   ...rest
 }) => {
-  const baseClasses = "inline-flex items-center justify-center gap-2 font-sans font-bold border-none rounded-button cursor-pointer transition-all duration-300";
-  const variantClasses = getVariantClasses(variant);
+  const baseClasses = "inline-flex items-center justify-center gap-2 font-sans font-bold border-none cursor-pointer transition-all duration-300";
+  
+  const customBgColor = bgColor ? bgColor : "";
+  const customTextColor = textColor ? textColor : "";
+  const variantClasses = bgColor || textColor 
+    ? `${customBgColor} ${customTextColor}` 
+    : getVariantClasses(variant);
+  
   const sizeClasses = getSizeClasses(size);
-  const disabledClasses = disabled ? "opacity-60 cursor-not-allowed" : "hover:translate-y-[-2px] hover:shadow-lg active:translate-y-0";
+  
+  const customBorderRadius = borderRadius || "rounded-button";
+  
+  const opacityClass = opacity ? `opacity-${opacity}` : "";
+  
+  const disabledClasses = disabled 
+    ? "opacity-60 cursor-not-allowed" 
+    : "hover:translate-y-[-2px] hover:shadow-lg active:translate-y-0";
 
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`${baseClasses} ${variantClasses} ${sizeClasses} ${disabledClasses} ${className}`}
+      className={`${baseClasses} ${variantClasses} ${sizeClasses} ${customBorderRadius} ${opacityClass} ${disabledClasses} ${className}`}
       {...rest}
     >
       {children}
@@ -69,12 +85,23 @@ Button.propTypes = {
   onClick: PropTypes.func,
   type: PropTypes.oneOf(["button", "submit", "reset"]),
   className: PropTypes.string,
+  bgColor: PropTypes.string,       // Personalizado: "bg-blue-500"
+  textColor: PropTypes.string,     // Personalizado: "text-white"
+  borderRadius: PropTypes.string,  // Personalizado: "rounded-full"
+  opacity: PropTypes.oneOf([25, 50, 75, 100]), // Personalizado: 75
 };
 
 export { Button };
 
 //ejemplos
 /*
+<Button 
+  bgColor="bg-purple-500" 
+  textColor="text-yellow-200"
+  borderRadius="rounded-lg"
+  opacity={90}
+  size="large"
+>
 
 <Button>Crear Cuenta</Button>
 <Button variant="secondary" size="small">Cancelar</Button>
