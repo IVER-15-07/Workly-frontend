@@ -5,7 +5,7 @@ import axiosInstance from "../../../helpers/axios-config";
 export const authService = {
     async register(datosUsuario) {
         try {
-            const response = await axiosInstance.post('/api/auth/register', datosUsuario);
+            const response = await axiosInstance.post('/api/auth/registro', datosUsuario);
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.message || 'Error al registrar usuario');
