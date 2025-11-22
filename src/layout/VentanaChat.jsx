@@ -4,22 +4,11 @@ import Sidebar from '../components/Sidebar.jsx';
 import Chat from '../page/Chat.jsx';
 import UserInfo from '../components/UserInfo.jsx';
 import GroupCreateModal from '../components/GroupCreateModal.jsx';
+import { conversationService } from '../api/services/conversation.api';
 
 const VentanaChat = () => {
   const theme = useTheme();
-  // En entorno de desarrollo, prellenamos algunos chats de ejemplo
-  const [chats, setChats] = useState(() => {
-    const demo = [
-      { id: 1, titulo: 'Proyectos', isGroup: true, unread: 5, lastMessage: { contenido: 'Revisar PR', creadoEn: Date.now() - 1000 * 60 * 60 } },
-      { id: 2, titulo: 'Cafe de la tarde', isGroup: true, unread: 0, lastMessage: { contenido: 'Quedamos a las 16', creadoEn: Date.now() - 1000 * 60 * 30 } },
-      { id: 3, titulo: 'Proyectos sin el jefe', isGroup: true, unread: 5, lastMessage: { contenido: 'Planificar sprint', creadoEn: Date.now() - 1000 * 60 * 60 * 24 } },
-      // Direct messages
-      { id: 101, nombre: 'Maria la del Barrio', isGroup: false, unread: 5, lastMessage: { contenido: '¿Vienes hoy?', creadoEn: Date.now() - 1000 * 60 * 20 }, online: true },
-      { id: 102, nombre: 'Lucas Sinclair', isGroup: false, unread: 1, lastMessage: { contenido: 'OK, perfecto', creadoEn: Date.now() - 1000 * 60 * 60 }, online: false },
-    ];
-
-    return demo;
-  });
+  const [chats, setChats] = useState([]);
   const [currentUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('user')) || { id: 1, nombre: 'Usuario_123', email: 'usuario@gmail.com' };
@@ -57,17 +46,29 @@ const VentanaChat = () => {
     console.log('new chat');
   };
 
-  const handleCreateGroup = ({ titulo, integrantes }) => {
-    const newGroup = {
-      id: Date.now(),
-      titulo,
-      isGroup: true,
-      unread: 0,
-      integrantes,
-      lastMessage: { contenido: '', creadoEn: Date.now() },
-    };
-    setChats((prev) => [newGroup, ...(prev || [])]);
-    setShowGroupModal(false);
+  const handleCreateGroup = async ({ titulo, integrantes }) => {
+    try {
+      const response = await conversationService.createConversacionGrupal({
+        participantes: integrantes,
+        titulo
+      });
+      const newGroup = response?.data ?? response;
+      
+      // Add isGroup flag if not present
+      const groupChat = {
+        ...newGroup,
+        isGroup: true,
+        unread: 0,
+        lastMessage: newGroup.mensajes?.[newGroup.mensajes.length - 1] || { contenido: '', creadoEn: Date.now() }
+      };
+      
+      setChats((prev) => [groupChat, ...(prev || [])]);
+      setSelectedChat(groupChat);
+      setShowGroupModal(false);
+    } catch (error) {
+      console.error('Error creating group:', error);
+      alert('No se pudo crear el grupo. Intenta de nuevo.');
+    }
   };
 
   return (

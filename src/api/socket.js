@@ -18,22 +18,23 @@ export function disconnect() {
 
 export function joinConversation(conversacionId, userId) {
   if (!socket.connected) socket.connect();
-  socket.emit("joinConversation", { conversacionId, userId });
+  socket.emit("joinConversacion", { conversacionId, userId });
 }
 
 export function sendMessage(payload) {
-  socket.emit("sendMessage", payload);
+  socket.emit("enviarMensaje", payload);
 }
 
 export function onConversationHistory(cb) {
-  socket.on("conversationHistory", cb);
+  socket.on("historialConversacion", cb);
 }
 
 export function onReceiveMessage(cb) {
-  socket.on("receiveMessage", cb);
+  socket.on("recibirMensaje", cb);
 }
 
 export function onError(cb) {
-  socket.on("errorMessage", cb);
+  socket.on("errorMensaje", cb);
+  socket.on("errorMessage", cb); // Backend usa ambos nombres
 }
 // ...existing code...

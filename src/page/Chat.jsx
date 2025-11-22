@@ -18,52 +18,53 @@ import { conversationService } from "../api/services/conversation.api";
 const Chat = ({ selectedChat = null }) => {
   const theme = useTheme?.() || {};
 
-  const [me, setMe] = useState(1);
-  const [other, setOther] = useState(2);
+  const [me] = useState(1);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
 
   const containerRef = useRef(null);
 
-  // helper para generar ids locales
-  const createId = () => {
-    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-    return String(Date.now()) + "-" + Math.random().toString(36).slice(2);
-  };
-
   useEffect(() => {
+    // listeners
     onConversationHistory((hist) => setMessages(hist || []));
-    onReceiveMessage((msg) => setMessages((prev) => [...prev, msg]));
+    onReceiveMessage((msg) => setMessages((m) => [...m, msg]));
     onError((e) => console.error("WS error:", e));
 
     return () => {
       disconnect();
-      if (socket && socket.off) {
-        socket.off("conversationHistory");
-        socket.off("receiveMessage");
-        socket.off("errorMessage");
-      }
+      socket.off("historialConversacion");
+      socket.off("recibirMensaje");
+      socket.off("errorMensaje");
+      socket.off("errorMessage");
     };
   }, []);
 
   // when selectedChat changes, load messages and join its conversation
   useEffect(() => {
-    if (!selectedChat) return;
+    if (!selectedChat) {
+      setConversation(null);
+      setMessages([]);
+      return;
+    }
+    
     setConversation(selectedChat);
 
     (async () => {
       try {
-        const msgsResp = await conversationService.getMessages(selectedChat.id);
-        const msgs = msgsResp?.data ?? msgsResp;
-        if (Array.isArray(msgs)) setMessages(msgs);
-      } catch (err) {
-        console.debug('getMessages failed for selectedChat', err);
-      }
+        // Cargar mensajes
+        const response = await conversationService.getMessages(selectedChat.id);
+        const msgs = response?.data ?? response;
+        setMessages(Array.isArray(msgs) ? msgs : []);
 
-      try { disconnect(); } catch { /* ignore */ }
-      connect();
-      joinConversation(selectedChat.id, me);
+        // Reconectar socket limpio y unirse a la room
+        disconnect();
+        connect();
+        joinConversation(selectedChat.id, me);
+      } catch (err) {
+        console.error('Error loading conversation:', err);
+        setMessages([]);
+      }
     })();
   }, [selectedChat, me]);
 
@@ -73,52 +74,18 @@ const Chat = ({ selectedChat = null }) => {
     }
   }, [messages]);
 
-  async function handleGetOrCreateConversation() {
-    try {
-      const resp = await conversationService.createOrGetConversation({ userAId: me, userBId: other, titulo: '# Proyectos' });
-      const conv = resp?.data ?? resp;
-      setConversation(conv);
-
-      // try REST messages first (fallback), normalize response
-      try {
-        const msgsResp = await conversationService.getMessages(conv.id);
-        const msgs = msgsResp?.data ?? msgsResp;
-        if (Array.isArray(msgs)) setMessages(msgs);
-      } catch (err) {
-        // ignore - server may emit historial via socket
-        console.debug('getMessages fallback failed', err);
-      }
-
-      // reconnect socket cleanly and join
-      try { disconnect(); } catch { /* ignore */ }
-      connect();
-      joinConversation(conv.id, me);
-    } catch (err) {
-      console.error('Error creating/getting conversation', err);
-      alert('No se pudo crear/obtener la conversación');
-    }
-  }
-
   function handleSend() {
-    if (!conversation) return alert("Primero crea/únete a la conversación (botón Crear/Unir conversación)");
+    if (!conversation) return alert("Primero crea/únete a la conversación");
     if (!text.trim()) return;
 
     const payload = {
       contenido: text.trim(),
       remitenteId: Number(me),
-      conversacionId: conversation.id,
+      conversacionId: Number(conversation.id),
     };
 
-    // optimistic update
-    const localMsg = { id: createId(), ...payload, creadoEn: Date.now() };
-    setMessages((prev) => [...prev, localMsg]);
+    sendMessage(payload);
     setText("");
-
-    try {
-      sendMessage(payload);
-    } catch (err) {
-      console.error('sendMessage error', err);
-    }
   }
 
   // derive theme values
@@ -139,43 +106,7 @@ const Chat = ({ selectedChat = null }) => {
           <div className="text-sm" style={{ color: neutral2 }}>{messages.length} mensajes</div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <label className="text-sm" style={{ color: neutral2 }}>
-            Yo:
-            <select
-              value={me}
-              onChange={(e) => setMe(Number(e.target.value))}
-              className="ml-2 px-3 py-2 rounded-input"
-              style={{ fontFamily, border: `1px solid ${neutral1}`, background: cardBg }}
-            >
-              <option value={1}>Alice (1)</option>
-              <option value={2}>Bob (2)</option>
-            </select>
-          </label>
-
-          <label className="text-sm" style={{ color: neutral2 }}>
-            Otro:
-            <select
-              value={other}
-              onChange={(e) => setOther(Number(e.target.value))}
-              className="ml-2 px-3 py-2 rounded-input"
-              style={{ fontFamily, border: `1px solid ${neutral1}`, background: cardBg }}
-            >
-              <option value={1}>Alice (1)</option>
-              <option value={2}>Bob (2)</option>
-            </select>
-          </label>
-
-          <Button
-            variant="primary"
-            size="medium"
-            onClick={handleGetOrCreateConversation}
-            className="ml-4"
-          >
-            Crear/Unir
-          </Button>
-        </div>
-      </div>
+              </div>
 
       {/* Messages panel */}
       <div
