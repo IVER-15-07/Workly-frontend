@@ -3,7 +3,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../api/services/auth.api";
 import { firebaseAuthService } from "../api/services/firebase.api";
-
+import { Button } from '../components/button/Button';
+import { IconButton } from "../components/button/IconButton";
+import { Eye, EyeOff } from "lucide-react";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -80,21 +82,20 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white shadow rounded-lg p-6 ">
-        <h1 className="text-2xl font-semibold mb-4">Iniciar sesión</h1>
-
+     <div className="hidden md:flex flex-col items-center rounded-card justify-center bg-transparent h-170">
+      <div className="w-full h-full bg-transparent shadow rounded-lg p-6">
+      <h1 className="text-5xl size my-18  font-semibold mb-4 text-center">Iniciar sesión</h1>
 
         <button
           onClick={handleGoogleLogin}
-          className="w-full py-2 mb-4 rounded border border-gray-200 bg-white text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-100 transition"
+          className="w-170 py-2 mb-10 my-10 rounded border border-gray-400 bg-grey-100 text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-100 transition mx-auto"
           disabled={loading}
         >
-          <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" />
+          <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5 " />
           Iniciar con Google
         </button>
 
-        <div className="text-center text-sm text-gray-400 mb-4">o con correo</div>
+        <div className="text-center text-sm text-gray-500 mb-4">o con correo</div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
@@ -102,7 +103,8 @@ const Login = () => {
             placeholder="Correo"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
+            className="w-full px-3 my-4 py-2 rounded-inputMedium font-sans text-base border-2 transition-colors pr-12"
+
             required
           />
           <input
@@ -110,16 +112,20 @@ const Login = () => {
             placeholder="Contraseña"
             value={contrasena}
             onChange={(e) => setContrasena(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
+            className="w-full px-3 my-4 py-2 rounded-inputMedium font-sans text-base border-2 transition-colors pr-12"
             required
           />
+          
           <button
             type="submit"
+            variant="primary"
+            size="medium"
             disabled={loading}
-            className="w-full py-2 bg-gray-800 text-white rounded"
+            className="w-[280px] py-2 my-8 bg-[#547792] text-white font-bold rounded-full mx-auto block"
           >
             {loading ? "Cargando..." : "Entrar"}
           </button>
+
         </form>
 
         {msg && <div className="mt-4 text-sm text-red-600">{msg}</div>}
