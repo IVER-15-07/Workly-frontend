@@ -37,9 +37,22 @@ const Chat = ({ selectedChat = null }) => {
     connect();
 
     // Configurar listeners
-    const handleHistory = (hist) => setMessages(hist || []);
-    const handleReceive = (msg) => setMessages((m) => [...m, msg]);
-    const handleError = (e) => console.error("WS error:", e);
+    const handleHistory = (hist) => {
+      console.log("📥 Historial recibido:", hist);
+      setMessages(hist || []);
+    };
+    
+    const handleReceive = (msg) => {
+      console.log("📨 Mensaje recibido:", msg);
+      setMessages((m) => {
+        console.log("📝 Estado anterior:", m.length, "mensajes");
+        const newMessages = [...m, msg];
+        console.log("📝 Estado nuevo:", newMessages.length, "mensajes");
+        return newMessages;
+      });
+    };
+    
+    const handleError = (e) => console.error("❌ WS error:", e);
 
     onConversationHistory(handleHistory);
     onReceiveMessage(handleReceive);
@@ -87,8 +100,10 @@ const Chat = ({ selectedChat = null }) => {
   }, [selectedChat, me]);
 
   useEffect(() => {
+    console.log("🔄 Messages changed, total:", messages.length);
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      console.log("📜 Scroll ajustado");
     }
   }, [messages]);
 
@@ -102,6 +117,7 @@ const Chat = ({ selectedChat = null }) => {
       conversacionId: Number(conversation.id),
     };
 
+    console.log("📤 Enviando mensaje:", payload);
     sendMessage(payload);
     setText("");
   }
