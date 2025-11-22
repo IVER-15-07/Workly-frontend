@@ -1,57 +1,57 @@
-const colors = {
-  primary: "#547792",
-  secondary: "#ECEFCA",
-  card: "#F6FAFD",
-  error: "#EB6969",
-  black: "#0B0B0B",
-  neutral1: "#E2E2E2",
-  neutral2: "#807979",
-  light: "#FFFFFF",
-};
+  const colors = {
+    primary: "#547792",
+    secondary: "#ECEFCA",
+    card: "#F6FAFD",
+    error: "#EB6969",
+    black: "#0B0B0B",
+    neutral1: "#E2E2E2",
+    neutral2: "#807979",
+    light: "#FFFFFF",
+  };
 
-// Formas/Bordes
-const shapes = {
-  cardRadius: "25px",
-  inputLarge: "50px",
-  inputMedium: "25px",
-  buttonRadius: "25px",
-  chipRadius: "50px",
-  buttonNormal: "10px",
-};
+  // Formas/Bordes
+  const shapes = {
+    cardRadius: "25px",
+    inputLarge: "50px",
+    inputMedium: "25px",
+    buttonRadius: "25px",
+    chipRadius: "50px",
+    buttonNormal: "10px",
+  };
 
-// Tipografía
-const typography = {
-  fontFamily: "'Albert Sans', sans-serif",
-  display: {
-    extrabold128: {
-      fontSize: "128px",
-      fontWeight: 800,
-      lineHeight: "140px",
+  // Tipografía
+  const typography = {
+    fontFamily: "'Albert Sans', sans-serif",
+    display: {
+      extrabold128: {
+        fontSize: "128px",
+        fontWeight: 800,
+        lineHeight: "140px",
+      },
+      large: {
+        fontSize: "64px",
+        fontWeight: 700,
+        lineHeight: "72px",
+      },
+      medium: {
+        fontSize: "36px",
+        fontWeight: 700,
+        lineHeight: "56px",
+      },
     },
-    large: {
-      fontSize: "64px",
-      fontWeight: 700,
-      lineHeight: "72px",
+    text: {
+      large: { fontSize: "20px", fontWeight: 400, lineHeight: "28px" },
+      medium: { fontSize: "16px", fontWeight: 400, lineHeight: "24px" },
+      small: { fontSize: "14px", fontWeight: 400, lineHeight: "20px" },
     },
-    medium: {
-      fontSize: "48px",
-      fontWeight: 700,
-      lineHeight: "56px",
+    input: {
+      medium: { fontSize: "16px", fontWeight: 400, lineHeight: "24px" },
     },
-  },
-  text: {
-    large: { fontSize: "20px", fontWeight: 400, lineHeight: "28px" },
-    medium: { fontSize: "16px", fontWeight: 400, lineHeight: "24px" },
-    small: { fontSize: "14px", fontWeight: 400, lineHeight: "20px" },
-  },
-  input: {
-    medium: { fontSize: "16px", fontWeight: 400, lineHeight: "24px" },
-  },
-  button: {
-    boldMedium: { fontSize: "16px", fontWeight: 700, lineHeight: "24px" },
-    semibold: { fontSize: "16px", fontWeight: 600, lineHeight: "24px" },
-  },
-};
+    button: {
+      boldMedium: { fontSize: "16px", fontWeight: 700, lineHeight: "24px" },
+      semibold: { fontSize: "16px", fontWeight: 600, lineHeight: "24px" },
+    },
+  };
 
 export const theme = { colors, shapes, typography };
 
