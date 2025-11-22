@@ -18,7 +18,7 @@ const getVariantClasses = (variant) => {
     primary: "bg-primary text-light hover:opacity-90",
     secondary: "bg-secondary text-black hover:opacity-90",
     danger: "bg-error text-light hover:opacity-90",
-    ghost: "bg-transparent text-primary hover:bg-secondary",
+    ghost: "bg-transparent text-primary hover:bg-Light",
   };
   return variants[variant] || variants.primary;
 };
@@ -44,32 +44,37 @@ const Button = ({
   textColor = null,
   borderRadius = null,
   opacity = null,
+  hoverBg = null,
+  hoverText = null,
   ...rest
 }) => {
   const baseClasses = "inline-flex items-center justify-center gap-2 font-sans font-bold border-none cursor-pointer transition-all duration-300";
-  
+
   const customBgColor = bgColor ? bgColor : "";
   const customTextColor = textColor ? textColor : "";
-  const variantClasses = bgColor || textColor 
-    ? `${customBgColor} ${customTextColor}` 
+  const variantClasses = bgColor || textColor
+    ? `${customBgColor} ${customTextColor}`
     : getVariantClasses(variant);
-  
+
   const sizeClasses = getSizeClasses(size);
-  
+
   const customBorderRadius = borderRadius || "rounded-button";
-  
+
   const opacityClass = opacity ? `opacity-${opacity}` : "";
-  
-  const disabledClasses = disabled 
-    ? "opacity-60 cursor-not-allowed" 
+  const hoverBgClass = hoverBg || "";
+  const hoverTextClass = hoverText || "";
+
+  const disabledClasses = disabled
+    ? "opacity-60 cursor-not-allowed"
     : "hover:translate-y-[-2px] hover:shadow-lg active:translate-y-0";
+
 
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`${baseClasses} ${variantClasses} ${sizeClasses} ${customBorderRadius} ${opacityClass} ${disabledClasses} ${className}`}
+      className={`${baseClasses} ${variantClasses} ${sizeClasses} ${customBorderRadius} ${opacityClass} ${hoverBgClass} ${hoverTextClass}  ${disabledClasses} ${className}`}
       {...rest}
     >
       {children}
@@ -89,6 +94,9 @@ Button.propTypes = {
   textColor: PropTypes.string,     // Personalizado: "text-white"
   borderRadius: PropTypes.string,  // Personalizado: "rounded-full"
   opacity: PropTypes.oneOf([25, 50, 75, 100]), // Personalizado: 75
+  hoverBg: PropTypes.string,
+  hoverText: PropTypes.string,
+
 };
 
 export { Button };
