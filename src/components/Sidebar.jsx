@@ -5,7 +5,7 @@ import DirectSection from './utils/DirectSection';
 import useDirects from '../hooks/useDirects';
 import { conversationService } from '../api/services/conversation.api';
 
-const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }}) => {
+const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { } }) => {
   const [query] = useState('');
   const { directs: directUsers, reload } = useDirects();
 
@@ -13,6 +13,7 @@ const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }}) => 
     try {
       const current = JSON.parse(localStorage.getItem('user')) || {};
       const currentUserId = current.id;
+
       if (!currentUserId) {
         console.error('Usuario actual no encontrado en localStorage');
         return;
@@ -25,7 +26,7 @@ const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }}) => 
         titulo: user.nombre
       });
       const conv = res?.data ?? res;
-      
+
       // 2. Cargar mensajes históricos si existe la conversación
       let messages = [];
       if (conv?.id) {
@@ -37,15 +38,15 @@ const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }}) => 
           console.warn('No se pudieron cargar mensajes:', err);
         }
       }
-      
+
       // 3. Preparar chat con mensajes para enviar al componente Chat
-      const directChat = { 
-        ...conv, 
+      const directChat = {
+        ...conv,
         isGroup: false,
         messages: messages,
         lastMessage: messages.length > 0 ? messages[messages.length - 1] : null
       };
-      
+
       onSelect?.(directChat);
       reload();
     } catch (err) {

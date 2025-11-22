@@ -1,3 +1,4 @@
+// ...existing code...
 import { useEffect, useState, useRef } from "react";
 import { FiSend } from 'react-icons/fi';
 import { IconButton } from '../components/button/IconButton';
@@ -12,6 +13,9 @@ import {
   onConversationHistory,
   onReceiveMessage,
   onError,
+  offConversationHistory,
+  offReceiveMessage,
+  offError,
 } from "../api/socket";
 import { conversationService } from "../api/services/conversation.api";
 
@@ -41,17 +45,16 @@ const Chat = ({ selectedChat = null }) => {
       console.log("📥 Historial recibido:", hist);
       setMessages(hist || []);
     };
-    
+
     const handleReceive = (msg) => {
       console.log("📨 Mensaje recibido:", msg);
-      setMessages((m) => {
-        console.log("📝 Estado anterior:", m.length, "mensajes");
-        const newMessages = [...m, msg];
-        console.log("📝 Estado nuevo:", newMessages.length, "mensajes");
-        return newMessages;
+      setMessages((prev) => {
+        // evitar duplicados por ack + broadcast
+        if (prev.some(p => p.id && msg.id && p.id === msg.id)) return prev;
+        return [...prev, msg];
       });
     };
-    
+
     const handleError = (e) => console.error("❌ WS error:", e);
 
     onConversationHistory(handleHistory);
@@ -59,11 +62,10 @@ const Chat = ({ selectedChat = null }) => {
     onError(handleError);
 
     return () => {
-      // Limpiar listeners al desmontar
-      socket.off("historialConversacion", handleHistory);
-      socket.off("recibirMensaje", handleReceive);
-      socket.off("errorMensaje", handleError);
-      socket.off("errorMessage", handleError);
+      // Limpiar listeners al desmontar (usar helpers consistentes)
+      offConversationHistory(handleHistory);
+      offReceiveMessage(handleReceive);
+      offError(handleError);
       disconnect();
     };
   }, []);
@@ -75,7 +77,7 @@ const Chat = ({ selectedChat = null }) => {
       setMessages([]);
       return;
     }
-    
+
     setConversation(selectedChat);
 
     (async () => {
@@ -85,13 +87,8 @@ const Chat = ({ selectedChat = null }) => {
         const msgs = response?.data ?? response;
         setMessages(Array.isArray(msgs) ? msgs : []);
 
-        // Unirse a la room sin desconectar
-        if (socket.connected) {
-          joinConversation(selectedChat.id, me);
-        } else {
-          connect();
-          setTimeout(() => joinConversation(selectedChat.id, me), 100);
-        }
+        // Unirse a la room sin desconectar (joinConversation helper conecta si hace falta)
+        joinConversation(selectedChat.id, me);
       } catch (err) {
         console.error('Error loading conversation:', err);
         setMessages([]);
@@ -118,7 +115,21 @@ const Chat = ({ selectedChat = null }) => {
     };
 
     console.log("📤 Enviando mensaje:", payload);
-    sendMessage(payload);
+
+    // usar ack para recibir el mensaje guardado por el servidor
+    sendMessage(payload, (resp) => {
+      if (!resp) return;
+      if (resp.ok && resp.data) {
+        const saved = resp.data;
+        setMessages((prev) => {
+          if (prev.some(p => p.id && saved.id && p.id === saved.id)) return prev;
+          return [...prev, saved];
+        });
+      } else {
+        console.error("Error al enviar mensaje (ack):", resp.error || resp);
+      }
+    });
+
     setText("");
   }
 
@@ -140,7 +151,7 @@ const Chat = ({ selectedChat = null }) => {
           <div className="text-sm" style={{ color: neutral2 }}>{messages.length} mensajes</div>
         </div>
 
-              </div>
+      </div>
 
       {/* Messages panel */}
       <div
@@ -166,7 +177,7 @@ const Chat = ({ selectedChat = null }) => {
 
                   <div className={`max-w-[70%] ${isMe ? 'text-right' : 'text-left'}`}>
                     <div className="flex items-baseline justify-between mb-1">
-                      <div style={{ fontSize: theme.typography?.text?.small?.fontSize, fontWeight: 600 }}>{isMe ? 'Tú' : `User ${m.remitenteId}`}</div>
+                      <div style={{ fontSize: theme.typography?.text?.small?.fontSize, fontWeight: 600 }}>{isMe ? 'Tú' : (m.remitente?.nombre ? m.remitente.nombre : `User ${m.remitenteId}`)}</div>
                       <div style={{ fontSize: theme.typography?.text?.small?.fontSize, color: neutral2, marginLeft: 8 }}>{m.creadoEn ? new Date(m.creadoEn).toLocaleTimeString() : ''}</div>
                     </div>
                     <div
@@ -198,7 +209,7 @@ const Chat = ({ selectedChat = null }) => {
         )}
       </div>
 
-      {/* Input */}
+      
       <div className="mt-2 p-4" style={{ background: cardBg, borderRadius: radius, border: `1px solid ${neutral1}` }}>
         <div className="flex items-center gap-3">
           <input
@@ -224,3 +235,4 @@ const Chat = ({ selectedChat = null }) => {
 }
 
 export default Chat;
+// ...existing code...
