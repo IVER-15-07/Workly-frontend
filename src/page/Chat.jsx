@@ -26,17 +26,25 @@ const Chat = ({ selectedChat = null }) => {
   const containerRef = useRef(null);
 
   useEffect(() => {
-    // listeners
-    onConversationHistory((hist) => setMessages(hist || []));
-    onReceiveMessage((msg) => setMessages((m) => [...m, msg]));
-    onError((e) => console.error("WS error:", e));
+    // Conectar socket una sola vez
+    connect();
+
+    // Configurar listeners
+    const handleHistory = (hist) => setMessages(hist || []);
+    const handleReceive = (msg) => setMessages((m) => [...m, msg]);
+    const handleError = (e) => console.error("WS error:", e);
+
+    onConversationHistory(handleHistory);
+    onReceiveMessage(handleReceive);
+    onError(handleError);
 
     return () => {
+      // Limpiar listeners al desmontar
+      socket.off("historialConversacion", handleHistory);
+      socket.off("recibirMensaje", handleReceive);
+      socket.off("errorMensaje", handleError);
+      socket.off("errorMessage", handleError);
       disconnect();
-      socket.off("historialConversacion");
-      socket.off("recibirMensaje");
-      socket.off("errorMensaje");
-      socket.off("errorMessage");
     };
   }, []);
 
@@ -57,10 +65,13 @@ const Chat = ({ selectedChat = null }) => {
         const msgs = response?.data ?? response;
         setMessages(Array.isArray(msgs) ? msgs : []);
 
-        // Reconectar socket limpio y unirse a la room
-        disconnect();
-        connect();
-        joinConversation(selectedChat.id, me);
+        // Unirse a la room sin desconectar
+        if (socket.connected) {
+          joinConversation(selectedChat.id, me);
+        } else {
+          connect();
+          setTimeout(() => joinConversation(selectedChat.id, me), 100);
+        }
       } catch (err) {
         console.error('Error loading conversation:', err);
         setMessages([]);
