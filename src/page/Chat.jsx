@@ -18,7 +18,14 @@ import { conversationService } from "../api/services/conversation.api";
 const Chat = ({ selectedChat = null }) => {
   const theme = useTheme?.() || {};
 
-  const [me] = useState(1);
+  const [me] = useState(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      return user?.id || 1;
+    } catch {
+      return 1;
+    }
+  });
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
