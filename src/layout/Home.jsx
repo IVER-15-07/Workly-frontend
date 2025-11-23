@@ -5,9 +5,9 @@ import { Button } from '../components/button/Button';
 import logo from "../assets/logo.png";
 
 const Home = () => {
-     const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState("login"); // "login" | "register"
   return (
-<div className="w-full min-h-screen flex items-center justify-center p-4 bg-gradient-to-r from-primary to-secondary">
+    <div className="w-full min-h-screen flex items-center justify-center p-4 bg-gradient-to-r from-primary to-secondary">
       <div className="w-full shadow items-center overflow-hidden grid grid-cols-1 md:grid-cols-2">
         {/* Lado informativo */}
         <div className="hidden md:flex flex-col items-center rounded-card justify-center  bg-card h-170">
@@ -39,9 +39,8 @@ const Home = () => {
         </div>
 
         {/* Lado forms */}
-        <div className="p-8">
-          {/* Botones móvil */}
-          <div className="flex gap-3 mb-6 md:hidden">
+        <div className="p-6">
+          <div className="flex gap-2 mb-4 md:hidden">
             <Button
               variant={mode === 'login' ? 'primary' : 'secondary'}
               size="medium"
@@ -60,11 +59,11 @@ const Home = () => {
               Registrarse
             </Button>
           </div>
-
-          {/* Contenido dinámico */}
-          <div className="items-center p-6 justify-center">
-            {mode === 'login' ? <Login /> : <Registro />}
-          </div>
+          {/* Aquí va el contenido dinámico */}
+          {mode === "login"
+            ? <Login />
+            : <Registro login={() => setMode("login")} />
+          }
         </div>
       </div>
     </div>

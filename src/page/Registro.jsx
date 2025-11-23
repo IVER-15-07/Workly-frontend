@@ -6,7 +6,7 @@ import { IconButton } from "../components/button/IconButton";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/button/Button";
 
-const Registro = () => {
+const Registro = ({ login }) => {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -77,7 +77,7 @@ const Registro = () => {
             });
 
             setMsg({ tipo: "exito", texto: "Registro exitoso. Redirigiendo..." });
-            setTimeout(() => navigate("/"), 1000);
+            setTimeout(() => login(), 1000); 
         } catch (err) {
             setMsg({
                 tipo: "error",
@@ -179,7 +179,7 @@ const Registro = () => {
                                     } focus:outline-none`}
                                 />
                                 <IconButton
-                                    icon={visibility.contrasena ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    icon={visibility.contrasena ? <Eye size={20} /> : <EyeOff size={20} />}
                                     variant="ghost"
                                     onClick={() => setVisibility(prev => ({ ...prev, contrasena: !prev.contrasena }))}
                                     className="absolute right-4 top-1/2 -translate-y-1/2"
@@ -214,7 +214,7 @@ const Registro = () => {
                                     } focus:outline-none`}
                                 />
                                 <IconButton
-                                    icon={visibility.confirmarContrasena ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    icon={visibility.confirmarContrasena ? <Eye size={20} /> : <EyeOff size={20} />}
                                     variant="ghost"
                                     onClick={() => setVisibility(prev => ({ ...prev, confirmarContrasena: !prev.confirmarContrasena }))}
                                     className="absolute right-4 top-1/2 -translate-y-1/2"
@@ -226,12 +226,6 @@ const Registro = () => {
                                 </p>
                             )}
                         </div>
-                    </div>
-
-                    <div className="pt-2">
-                        <p className="text-text-sm text-neutral-2">
-                            Al registrarte, aceptas los Términos de uso y Política de Privacidad de workly.
-                        </p>
                     </div>
 
                     {/* Botón de envío */}
