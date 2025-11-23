@@ -27,20 +27,37 @@ export const authService = {
         }
     },
 
-    async firebaseLogin(idToken) {
-        try {
-            const response = await axiosInstance.post('/api/auth/login-firebase', { idToken });
-            if (response.data.success) {
-                localStorage.setItem('userToken', response.data.data.token);
-                localStorage.setItem('user', JSON.stringify(response.data.data.usuario));
-                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
+    async firebaseLogin(payload) {
+        try {  
+            const body = typeof payload === "string" ? { idToken: payload } : (payload || {});
+            const { data } = await axiosInstance.post('/api/auth/login-firebase', body);
+            if (data?.success) {
+                const { token, usuario } = data.data;
+                if (token) {
+                    localStorage.setItem('userToken', token);
+                    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${ token }`;
+                }
+                if (usuario) localStorage.setItem('user', JSON.stringify(usuario));
             }
+            return data;
         } catch (error) {
             throw new Error(error.response?.data?.message || 'Error al iniciar sesión con Firebase');
         }
     },
-
+    
     isAuthenticated() {
         return !!localStorage.getItem('userToken');
     },
+
+    logout() {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('user');
+    },
+
+
+    // Obtener usuario actual
+    obtenerUsuarioActual() {
+        const user = localStorage.getItem('user');
+        return user ? JSON.parse(user) : null;
+    }
 };  
