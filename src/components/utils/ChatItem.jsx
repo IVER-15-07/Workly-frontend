@@ -18,9 +18,9 @@ const ChatItem = ({
   const badgeCount = chat.unread ?? chat.count ?? chat.unreadCount ?? 0;
 
   const sizes = {
-    sm: { avatar: 'w-8 h-8', pad: 'px-3 py-2', titleSize: theme.typography?.text?.small?.fontSize || '14px' },
-    md: { avatar: 'w-10 h-10', pad: 'px-4 py-3', titleSize: theme.typography?.text?.medium?.fontSize || '16px' },
-    lg: { avatar: 'w-12 h-12', pad: 'px-4 py-3', titleSize: theme.typography?.text?.large?.fontSize || '20px' },
+    sm: { avatar: 'w-8 h-8', pad: 'px-2 py-2', titleSize: theme.typography?.text?.small?.fontSize },
+    md: { avatar: 'w-9 h-9', pad: 'px-3 py-2', titleSize: theme.typography?.text?.small?.fontSize },
+    lg: { avatar: 'w-10 h-10', pad: 'px-3 py-2', titleSize: theme.typography?.text?.medium?.fontSize },
   };
 
   const s = sizes[size] || sizes.md;
@@ -29,8 +29,12 @@ const ChatItem = ({
     <button
       type="button"
       onClick={() => onSelect?.(chat)}
-      className={`w-full text-left flex items-center gap-3 transition-colors duration-150 ${s.pad}`}
-      style={selected ? { backgroundColor: theme.colors?.primary, color: theme.colors?.light, borderRadius: theme.shapes?.buttonRadius || '12px' } : undefined}
+      className={`w-full text-left flex items-center gap-2 transition-all duration-200 ${s.pad} ${
+        selected 
+          ? 'bg-primary text-light' 
+          : 'hover:bg-neutral-1'
+      }`}
+      style={{ borderRadius: theme.shapes?.buttonNormal }}
       aria-pressed={selected}
       aria-label={`Abrir ${title}`}
     >
@@ -44,11 +48,11 @@ const ChatItem = ({
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-0.5">
           <div className="truncate" style={{ fontFamily, fontSize: s.titleSize, fontWeight: 600 }}>{title}</div>
-          <div className="ml-2 text-xs" style={{ color: theme.colors?.neutral2 }}>{time}</div>
+          <div className="ml-2" style={{ fontSize: '11px', color: selected ? theme.colors?.light : theme.colors?.neutral2, opacity: selected ? 0.8 : 1 }}>{time}</div>
         </div>
-        {subtitle && <div className="truncate mt-1 text-sm" style={{ color: theme.colors?.neutral2 }}>{subtitle}</div>}
+        {subtitle && <div className="truncate" style={{ fontSize: theme.typography?.text?.small?.fontSize, color: selected ? theme.colors?.light : theme.colors?.neutral2, opacity: selected ? 0.8 : 1 }}>{subtitle}</div>}
       </div>
 
       {badgeCount > 0 && (

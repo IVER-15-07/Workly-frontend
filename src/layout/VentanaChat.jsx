@@ -1,5 +1,5 @@
 import { useTheme } from 'styled-components';
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Chat from '../page/Chat.jsx';
 import UserInfo from '../components/UserInfo.jsx';
@@ -9,6 +9,7 @@ import { conversationService } from '../api/services/conversation.api';
 const VentanaChat = () => {
   const theme = useTheme();
   const [chats, setChats] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [currentUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('user')) || { id: 1, nombre: 'Usuario_123', email: 'usuario@gmail.com' };
@@ -19,17 +20,21 @@ const VentanaChat = () => {
 
   const [showGroupModal, setShowGroupModal] = useState(false);
 
-  const users = useMemo(() => {
-    // derive a simple users list from direct chats plus current user
-    const directs = chats.filter((c) => !c.isGroup).map((d) => ({ id: d.id, nombre: d.nombre }));
-    const list = [];
-    if (currentUser) list.push({ id: currentUser.id, nombre: currentUser.nombre });
-    // avoid duplicates
-    directs.forEach((u) => {
-      if (!list.find((x) => x.id === u.id)) list.push(u);
-    });
-    return list;
-  }, [chats, currentUser]);
+  // Cargar lista de usuarios al iniciar
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await conversationService.listUsuarios();
+        const usuarios = response?.data ?? response;
+        if (Array.isArray(usuarios)) {
+          setAllUsers(usuarios);
+        }
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    };
+    loadUsers();
+  }, []);
 
   const [selectedChat, setSelectedChat] = useState(null);
 
@@ -99,14 +104,14 @@ const VentanaChat = () => {
       {/* Right: User info (visible on md+) */}
       <aside className="hidden md:flex md:flex-col md:w-64 lg:w-80 xl:w-96 md:min-w-[16rem] bg-transparent">
         <div className="h-full w-full p-4 flex items-center">
-          <UserInfo user={currentUser} />
+          <UserInfo user={currentUser} selectedChat={selectedChat} currentUserId={currentUser?.id} />
         </div>
       </aside>
       <GroupCreateModal
         isOpen={showGroupModal}
         onClose={() => setShowGroupModal(false)}
         onCreate={handleCreateGroup}
-        users={users}
+        users={allUsers}
         currentUser={currentUser}
       />
     </div>
