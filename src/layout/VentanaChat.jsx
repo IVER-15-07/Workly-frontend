@@ -54,11 +54,14 @@ const VentanaChat = () => {
         console.log('📦 Private chats del backend:', privateChats);
         console.log('📦 Group chats del backend:', groupChats);
 
+        // Filtrar solo chats que tienen mensajes
+        const privateChatsWithMessages = privateChats.filter(chat => chat.ultimoMensaje);
+
         // Formatear y agrupar chats privados por participante
         // Solo mostrar la conversación más reciente con cada persona
         const privateChatsMap = new Map();
         
-        privateChats.forEach(chat => {
+        privateChatsWithMessages.forEach(chat => {
           const participantId = chat.participante?.id;
           if (!participantId) return;
           
@@ -72,7 +75,7 @@ const VentanaChat = () => {
         const formattedPrivateChats = Array.from(privateChatsMap.values()).map(chat => ({
           id: chat.conversacionId,
           conversacionId: chat.conversacionId,
-          titulo: chat.titulo,
+          titulo: chat.participante?.nombre || chat.titulo,
           nombre: chat.participante?.nombre || chat.titulo,
           isGroup: false,
           participante: chat.participante,
@@ -117,6 +120,76 @@ const VentanaChat = () => {
 
   const [selectedChat, setSelectedChat] = useState(null);
 
+  // Función para refrescar las conversaciones después de modificar participantes
+  const refreshConversations = async () => {
+    if (!currentUser?.id) return;
+
+    try {
+      const [privateResponse, groupResponse] = await Promise.all([
+        conversationService.getListChatPrivado(currentUser.id),
+        conversationService.getListChatGrupal(currentUser.id)
+      ]);
+
+      const privateChats = (privateResponse?.data ?? privateResponse) || [];
+      const groupChats = (groupResponse?.data ?? groupResponse) || [];
+
+      // Filtrar solo chats que tienen mensajes
+      const privateChatsWithMessages = privateChats.filter(chat => chat.ultimoMensaje);
+
+      const privateChatsMap = new Map();
+      privateChatsWithMessages.forEach(chat => {
+        const participantId = chat.participante?.id;
+        if (!participantId) return;
+        const existing = privateChatsMap.get(participantId);
+        if (!existing || chat.conversacionId > existing.conversacionId) {
+          privateChatsMap.set(participantId, chat);
+        }
+      });
+
+      const formattedPrivateChats = Array.from(privateChatsMap.values()).map(chat => ({
+        id: chat.conversacionId,
+        conversacionId: chat.conversacionId,
+        titulo: chat.participante?.nombre || chat.titulo,
+        nombre: chat.participante?.nombre || chat.titulo,
+        isGroup: false,
+        participante: chat.participante,
+        lastMessage: chat.ultimoMensaje,
+        unread: 0
+      }));
+
+      const formattedGroupChats = groupChats.map(chat => ({
+        id: chat.conversacionId,
+        conversacionId: chat.conversacionId,
+        titulo: chat.titulo,
+        isGroup: true,
+        participantes: chat.participantes,
+        lastMessage: chat.ultimoMensaje,
+        unread: 0
+      }));
+
+      const allConversations = [...formattedPrivateChats, ...formattedGroupChats];
+      const uniqueConversations = allConversations.reduce((acc, current) => {
+        const exists = acc.find(item => item.conversacionId === current.conversacionId);
+        if (!exists) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+
+      setChats(uniqueConversations);
+
+      // Actualizar el chat seleccionado con los nuevos datos
+      if (selectedChat) {
+        const updatedChat = uniqueConversations.find(c => c.conversacionId === selectedChat.conversacionId);
+        if (updatedChat) {
+          setSelectedChat(updatedChat);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing conversations:', error);
+    }
+  };
+
   const handleSelect = (c) => {
     if (c && c.action === 'create') {
       setShowGroupModal(true);
@@ -138,10 +211,25 @@ const VentanaChat = () => {
       });
       const newGroup = response?.data ?? response;
       
+      // Cargar los participantes del grupo recién creado
+      let participantes = newGroup.participantes || [];
+      if (newGroup.id && participantes.length === 0) {
+        try {
+          const participantesResponse = await conversationService.listarParticipantes(newGroup.id);
+          participantes = (participantesResponse?.data ?? participantesResponse) || [];
+        } catch (err) {
+          console.warn('No se pudieron cargar participantes del grupo nuevo:', err);
+        }
+      }
+      
       // Add isGroup flag if not present
       const groupChat = {
         ...newGroup,
+        id: newGroup.id,
+        conversacionId: newGroup.id,
         isGroup: true,
+        tipo: 'grupal',
+        participantes: participantes,
         unread: 0,
         lastMessage: newGroup.mensajes?.[newGroup.mensajes.length - 1] || { contenido: '', creadoEn: Date.now() }
       };
@@ -149,6 +237,8 @@ const VentanaChat = () => {
       setChats((prev) => [groupChat, ...(prev || [])]);
       setSelectedChat(groupChat);
       setShowGroupModal(false);
+      
+      console.log('✅ Grupo creado con', participantes.length, 'participantes');
     } catch (error) {
       console.error('Error creating group:', error);
       alert('No se pudo crear el grupo. Intenta de nuevo.');
@@ -167,7 +257,14 @@ const VentanaChat = () => {
       {/* Left: Sidebar (visible on md+) */}
       <aside className="hidden md:flex md:flex-col md:w-80 lg:w-96 md:min-w-[16rem] bg-transparent">
           <div className="h-full w-full p-2">
-          <Sidebar currentUser={currentUser} chats={chats} selectedChatId={selectedChat?.id ?? null} onSelect={handleSelect} onNewChat={handleNewChat} />
+          <Sidebar 
+            currentUser={currentUser} 
+            chats={chats} 
+            selectedChatId={selectedChat?.id ?? null} 
+            onSelect={handleSelect} 
+            onNewChat={handleNewChat}
+            allUsers={allUsers}
+          />
         </div>
       </aside>
 
@@ -183,7 +280,13 @@ const VentanaChat = () => {
       {/* Right: User info (visible on md+) */}
       <aside className="hidden md:flex md:flex-col md:w-64 lg:w-80 xl:w-96 md:min-w-[16rem] bg-transparent">
         <div className="h-full w-full p-4 flex items-center">
-          <UserInfo user={currentUser} selectedChat={selectedChat} currentUserId={currentUser?.id} />
+          <UserInfo 
+            user={currentUser} 
+            selectedChat={selectedChat} 
+            currentUserId={currentUser?.id}
+            allUsers={allUsers}
+            onParticipantsUpdate={refreshConversations}
+          />
         </div>
       </aside>
       <GroupCreateModal

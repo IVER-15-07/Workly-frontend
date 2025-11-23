@@ -4,7 +4,7 @@ import { FiLogOut } from 'react-icons/fi';
 import GroupSection from './utils/GroupSection';
 import DirectSection from './utils/DirectSection';
 
-const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }, currentUser = null }) => {
+const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }, currentUser = null, allUsers = [] }) => {
   const navigate = useNavigate();
   const [query] = useState('');
 
@@ -20,6 +20,12 @@ const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }, curr
 
   const groups = filtered.filter((c) => c.isGroup);
   const directs = filtered.filter((c) => !c.isGroup);
+
+  // Filtrar usuarios disponibles (excluyendo al usuario actual)
+  const availableUsers = useMemo(() => {
+    if (!currentUser?.id) return [];
+    return allUsers.filter(user => user.id !== currentUser.id);
+  }, [allUsers, currentUser]);
 
   return (
     <aside className="w-full h-full flex flex-col p-2">
@@ -38,7 +44,13 @@ const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }, curr
           <div className="border-t border-neutral-1 my-2" />
 
           <div className="flex-1 overflow-y-auto">
-            <DirectSection directs={directs} onSelect={onSelect} selectedChatId={selectedChatId} />
+            <DirectSection 
+              directs={directs} 
+              availableUsers={availableUsers}
+              onSelect={onSelect} 
+              selectedChatId={selectedChatId}
+              currentUserId={currentUser?.id}
+            />
           </div>
         </div>
 

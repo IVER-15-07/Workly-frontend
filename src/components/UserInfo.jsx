@@ -1,14 +1,130 @@
-const UserInfo = ({ selectedChat = null, currentUserId = null }) => {
+import { useState, useEffect } from 'react';
+import { FiUserPlus, FiUserMinus } from 'react-icons/fi';
+import AddParticipantModal from './AddParticipantModal';
+import { conversationService } from '../api/services/conversation.api';
+
+const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], onParticipantsUpdate = () => {} }) => {
   const isGroup = selectedChat?.isGroup || selectedChat?.tipo === 'grupal';
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Cargar participantes usando el servicio optimizado
+  useEffect(() => {
+    const loadParticipants = async () => {
+      if (!isGroup || !selectedChat?.conversacionId) {
+        setParticipants([]);
+        console.log('⚠️ No se cargan participantes - isGroup:', isGroup, 'conversacionId:', selectedChat?.conversacionId);
+        return;
+      }
+
+      console.log('🔄 Cargando participantes para conversación:', selectedChat.conversacionId);
+      setLoading(true);
+      try {
+        const response = await conversationService.listarParticipantes(selectedChat.conversacionId);
+        const participantsList = (response?.data ?? response) || [];
+        setParticipants(participantsList);
+        console.log('✅ Participantes cargados:', participantsList.length, participantsList);
+      } catch (error) {
+        console.error('❌ Error cargando participantes:', error);
+        // Fallback a los participantes del chat seleccionado
+        const fallbackParticipants = selectedChat?.participantes || [];
+        setParticipants(fallbackParticipants);
+        console.log('⚠️ Usando fallback con', fallbackParticipants.length, 'participantes');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadParticipants();
+  }, [selectedChat?.conversacionId, selectedChat?.participantes, isGroup]);
+
+  // Agregar participantes al grupo
+  const handleAddParticipants = async (userIds) => {
+    if (!selectedChat?.conversacionId) return;
+
+    try {
+      await Promise.all(
+        userIds.map(userId => 
+          conversationService.agregarParticipanteAGrupo(selectedChat.conversacionId, userId)
+        )
+      );
+      
+      console.log('✅ Participantes agregados exitosamente');
+      setShowAddModal(false);
+      
+      // Recargar participantes usando el servicio
+      const response = await conversationService.listarParticipantes(selectedChat.conversacionId);
+      const participantsList = (response?.data ?? response) || [];
+      setParticipants(participantsList);
+      
+      onParticipantsUpdate();
+    } catch (error) {
+      console.error('Error agregando participantes:', error);
+      alert('No se pudieron agregar los participantes. Intenta de nuevo.');
+    }
+  };
+
+  // Eliminar participante del grupo
+  const handleRemoveParticipant = async (userId) => {
+    if (!selectedChat?.conversacionId) return;
+
+    const confirmDelete = window.confirm('¿Estás seguro de que deseas eliminar este participante del grupo?');
+    if (!confirmDelete) return;
+
+    try {
+      await conversationService.eliminarParticipanteDeGrupo(selectedChat.conversacionId, userId);
+      console.log('✅ Participante eliminado exitosamente');
+      
+      // Recargar participantes usando el servicio
+      const response = await conversationService.listarParticipantes(selectedChat.conversacionId);
+      const participantsList = (response?.data ?? response) || [];
+      setParticipants(participantsList);
+      
+      onParticipantsUpdate();
+    } catch (error) {
+      console.error('Error eliminando participante:', error);
+      alert('No se pudo eliminar el participante. Intenta de nuevo.');
+    }
+  };
   
+  // Determinar si el usuario actual es el creador del grupo (primera persona que se unió)
+  const isGroupCreator = () => {
+    if (!isGroup || !participants || participants.length === 0) {
+      console.log('❌ No es creador - Grupo:', isGroup, 'Participantes:', participants?.length);
+      return false;
+    }
+    
+    const sortedParticipants = [...participants].sort((a, b) => {
+      const dateA = new Date(a.unidoEn || a.creadoEn);
+      const dateB = new Date(b.unidoEn || b.creadoEn);
+      return dateA - dateB;
+    });
+    
+    const creator = sortedParticipants[0];
+    const creatorId = creator?.usuarioId || creator?.usuario?.id;
+    const isCreator = creatorId === currentUserId;
+    
+    console.log('🔍 Verificando creador:', {
+      currentUserId,
+      creatorId,
+      isCreator,
+      creator,
+      totalParticipants: participants.length
+    });
+    
+    return isCreator;
+  };
+
   // Si hay un chat seleccionado (grupo o privado), mostrar info del chat
   if (selectedChat) {
     // Para grupos
     if (isGroup) {
-    const participants = selectedChat.participantes || [];
     const participantUsers = participants
       .map(p => p.usuario || p)
       .filter(u => u && u.id !== currentUserId);
+    
+    const canManageParticipants = isGroupCreator();
     
     return (
       <div className="w-full h-screen flex flex-col items-center justify-start p-4 bg-transparent">
@@ -26,10 +142,24 @@ const UserInfo = ({ selectedChat = null, currentUserId = null }) => {
               <h3 className="text-text-lg font-bold text-black">{selectedChat.titulo || 'Sin nombre'}</h3>
             </div>
 
+            {/* Botón agregar participante - solo para el creador */}
+            {canManageParticipants && (
+              <div className="w-full mb-4">
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-light rounded-button hover:opacity-90 transition-opacity"
+                >
+                  <FiUserPlus size={20} />
+                  <span className="text-text-base font-semibold">Agregar participantes</span>
+                </button>
+              </div>
+            )}
+
             {/* Integrantes */}
             <div className="w-full">
               <p className="text-text-sm font-semibold text-neutral-2 mb-3">
                 Integrantes ({participantUsers.length})
+                {loading && <span className="text-text-xs ml-2">(Cargando...)</span>}
               </p>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {participantUsers.map((participant, idx) => (
@@ -37,27 +167,48 @@ const UserInfo = ({ selectedChat = null, currentUserId = null }) => {
                     <div className="w-10 h-10 rounded-full bg-primary text-light flex items-center justify-center text-text-sm font-semibold">
                       {(participant.nombre || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-text-base font-medium text-black">{participant.nombre || `Usuario ${participant.id}`}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-text-base font-medium text-black truncate">{participant.nombre || `Usuario ${participant.id}`}</p>
                       {participant.email && (
-                        <p className="text-text-sm text-neutral-2">{participant.email}</p>
+                        <p className="text-text-sm text-neutral-2 truncate">{participant.email}</p>
                       )}
                     </div>
+                    {/* Botón eliminar - solo para el creador */}
+                    {canManageParticipants && (
+                      <button
+                        onClick={() => handleRemoveParticipant(participant.id)}
+                        className="p-2 hover:bg-red-100 rounded-button transition-colors text-error"
+                        title="Eliminar del grupo"
+                      >
+                        <FiUserMinus size={18} />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Modal agregar participantes */}
+        <AddParticipantModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onAdd={handleAddParticipants}
+          allUsers={allUsers}
+          currentParticipants={participants.map(p => p.usuario || p)}
+          currentUserId={currentUserId}
+        />
       </div>
     );
     }
     
     // Para chats privados - mostrar info del otro usuario
-    const participants = selectedChat.participantes || [];
-    const otherUser = participants
-      .map(p => p.usuario || p)
-      .find(u => u && u.id !== currentUserId);
+    // Puede venir como 'participante' (singular) o 'participantes' (plural)
+    const otherUser = selectedChat.participante || 
+                     (selectedChat.participantes || [])
+                       .map(p => p.usuario || p)
+                       .find(u => u && u.id !== currentUserId);
     
     // Si encontramos al otro usuario, mostrarlo
     if (otherUser) {
