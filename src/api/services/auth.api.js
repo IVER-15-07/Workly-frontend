@@ -27,7 +27,7 @@ export const authService = {
         }
     },
 
-    async loginfirebase(idToken) {
+    async firebaseLogin(idToken) {
         try {
             const response = await axiosInstance.post('/api/auth/login-firebase', { idToken });
             if (response.data.success) {
