@@ -88,7 +88,7 @@ const Login = () => {
 
         <button
           onClick={handleGoogleLogin}
-          className="w-170 py-2 mb-10 my-10 rounded border border-gray-400 bg-grey-100 text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-100 transition mx-auto"
+          className="w-full max-w-[400px] py-2 mb-10 my-10 rounded-lg border border-gray-400 bg-grey-100 text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-100 transition mx-auto"
           disabled={loading}
         >
           <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5 " />
