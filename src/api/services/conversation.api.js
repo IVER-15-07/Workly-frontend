@@ -47,4 +47,26 @@ export const conversationService = {
             throw error;
         }
     }
+
+    // recupera los chart privados de un usuario mas el ultimo mensaje
+    ,async getListChatPrivado(usuarioId) {
+        try {
+            const response = await axiosInstance.get(`/api/chat/conversaciones/usuario/${usuarioId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error getting private chats:", error);
+            throw error;
+        }
+    },
+
+    // recupera los chart grupales de un usuario mas el ultimo mensaje 
+    async getListChatGrupal(usuarioId) {
+        try {
+            const response = await axiosInstance.get(`/api/chat/conversaciones/grupo/${usuarioId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error getting group chats:", error);
+            throw error;
+        }
+    }
 };
