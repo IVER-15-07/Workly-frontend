@@ -68,5 +68,35 @@ export const conversationService = {
             console.error("Error getting group chats:", error);
             throw error;
         }
-    }
+    },
+
+    async agregarParticipanteAGrupo(conversacionId, usuarioId) {
+        try {
+            const response = await axiosInstance.post(`/api/chat/conversacion/${conversacionId}/participante/${usuarioId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error adding participant to group:", error);
+            throw error;
+        }
+    },
+
+    async eliminarParticipanteDeGrupo(conversacionId, usuarioId) {
+        try {
+            const response = await axiosInstance.delete(`/api/chat/conversacion/${conversacionId}/participante/${usuarioId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error removing participant from group:", error);
+            throw error;
+        }
+    },
+
+    async listarParticipantes(conversacionId) {
+        try {
+            const response = await axiosInstance.get(`/api/chat/conversacion/${conversacionId}/participantes`);
+            return response.data;
+        } catch (error) {
+            console.error("Error listing participants:", error);
+            throw error;
+        }
+    },
 };
