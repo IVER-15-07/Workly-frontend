@@ -7,7 +7,7 @@ import logo from "../assets/logo.png";
 const Home = () => {
      const [mode, setMode] = useState("login"); // "login" | "register"
   return (
-    <div className="flex items-center justify-center p-4 bg-gradient-to-r from-primary to-secondary">
+<div className="w-full min-h-screen flex items-center justify-center p-4 bg-gradient-to-r from-primary to-secondary">
       <div className="w-full shadow items-center overflow-hidden grid grid-cols-1 md:grid-cols-2">
         {/* Lado informativo */}
         <div className="hidden md:flex flex-col items-center rounded-card justify-center  bg-card h-170">
