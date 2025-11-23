@@ -3,78 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { FiLogOut } from 'react-icons/fi';
 import GroupSection from './utils/GroupSection';
 import DirectSection from './utils/DirectSection';
-import useDirects from '../hooks/useDirects';
-import { conversationService } from '../api/services/conversation.api';
 
 const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }, currentUser = null }) => {
   const navigate = useNavigate();
   const [query] = useState('');
-  const { directs: directUsers } = useDirects();
-  
-  // Filtrar usuarios directos para excluir al usuario actual
-  const currentUserId = useMemo(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      return user?.id;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const filteredDirects = useMemo(() => {
-    if (!currentUserId) return directUsers;
-    return directUsers.filter(user => user.id !== currentUserId);
-  }, [directUsers, currentUserId]);
-
-  const handleDirectSelect = async (user) => {
-    try {
-      const current = JSON.parse(localStorage.getItem('user')) || {};
-      const currentUserId = current.id;
-
-      if (!currentUserId) {
-        console.error('Usuario actual no encontrado en localStorage');
-        return;
-      }
-
-      // 1. Crear u obtener la conversación
-      const res = await conversationService.createOrGetConversation({
-        userAId: currentUserId,
-        userBId: user.id,
-        titulo: user.nombre
-      });
-      const conv = res?.data ?? res;
-
-      // 2. Cargar mensajes históricos si existe la conversación
-      let messages = [];
-      if (conv?.id) {
-        try {
-          const msgsResponse = await conversationService.getMessages(conv.id);
-          const msgs = msgsResponse?.data ?? msgsResponse;
-          messages = Array.isArray(msgs) ? msgs : [];
-        } catch (err) {
-          console.warn('No se pudieron cargar mensajes:', err);
-        }
-      }
-
-      // 3. Preparar chat con mensajes para enviar al componente Chat
-      const directChat = {
-        ...conv,
-        isGroup: false,
-        titulo: user.nombre, // Usar el nombre del usuario en lugar del título del backend
-        nombre: user.nombre,
-        messages: messages,
-        lastMessage: messages.length > 0 ? messages[messages.length - 1] : null
-      };
-
-      // Actualizar el usuario con el conversacionId ANTES de seleccionar
-      user.conversacionId = conv.id;
-      
-      onSelect?.(directChat);
-    } catch (err) {
-      console.error('Error abriendo conversación directa:', err);
-      alert('No se pudo abrir la conversación. Intenta de nuevo.');
-    }
-  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -87,6 +19,7 @@ const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }, curr
   }, [chats, query]);
 
   const groups = filtered.filter((c) => c.isGroup);
+  const directs = filtered.filter((c) => !c.isGroup);
 
   return (
     <aside className="w-full h-full flex flex-col p-2">
@@ -105,7 +38,7 @@ const Sidebar = ({ chats = [], selectedChatId = null, onSelect = () => { }, curr
           <div className="border-t border-neutral-1 my-2" />
 
           <div className="flex-1 overflow-y-auto">
-            <DirectSection directs={filteredDirects} onSelect={handleDirectSelect} selectedChatId={selectedChatId} />
+            <DirectSection directs={directs} onSelect={onSelect} selectedChatId={selectedChatId} />
           </div>
         </div>
 

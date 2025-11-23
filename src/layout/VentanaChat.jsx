@@ -36,6 +36,85 @@ const VentanaChat = () => {
     loadUsers();
   }, []);
 
+  // Cargar conversaciones existentes (privadas y grupales)
+  useEffect(() => {
+    const loadConversations = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        // Cargar chats privados y grupales en paralelo
+        const [privateResponse, groupResponse] = await Promise.all([
+          conversationService.getListChatPrivado(currentUser.id),
+          conversationService.getListChatGrupal(currentUser.id)
+        ]);
+
+        const privateChats = (privateResponse?.data ?? privateResponse) || [];
+        const groupChats = (groupResponse?.data ?? groupResponse) || [];
+
+        console.log('📦 Private chats del backend:', privateChats);
+        console.log('📦 Group chats del backend:', groupChats);
+
+        // Formatear y agrupar chats privados por participante
+        // Solo mostrar la conversación más reciente con cada persona
+        const privateChatsMap = new Map();
+        
+        privateChats.forEach(chat => {
+          const participantId = chat.participante?.id;
+          if (!participantId) return;
+          
+          // Si no existe o esta conversación es más reciente, actualizar
+          const existing = privateChatsMap.get(participantId);
+          if (!existing || chat.conversacionId > existing.conversacionId) {
+            privateChatsMap.set(participantId, chat);
+          }
+        });
+
+        const formattedPrivateChats = Array.from(privateChatsMap.values()).map(chat => ({
+          id: chat.conversacionId,
+          conversacionId: chat.conversacionId,
+          titulo: chat.titulo,
+          nombre: chat.participante?.nombre || chat.titulo,
+          isGroup: false,
+          participante: chat.participante,
+          lastMessage: chat.ultimoMensaje,
+          unread: 0
+        }));
+
+        // Formatear grupos
+        const formattedGroupChats = groupChats.map(chat => ({
+          id: chat.conversacionId,
+          conversacionId: chat.conversacionId,
+          titulo: chat.titulo,
+          isGroup: true,
+          participantes: chat.participantes,
+          lastMessage: chat.ultimoMensaje,
+          unread: 0
+        }));
+
+        // Combinar y eliminar duplicados por conversacionId
+        const allConversations = [...formattedPrivateChats, ...formattedGroupChats];
+        
+        // Eliminar duplicados
+        const uniqueConversations = allConversations.reduce((acc, current) => {
+          const exists = acc.find(item => item.conversacionId === current.conversacionId);
+          if (!exists) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+
+        setChats(uniqueConversations);
+        
+        console.log('✅ Conversaciones únicas cargadas:', uniqueConversations.length);
+        console.log('📋 Conversaciones:', uniqueConversations);
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+      }
+    };
+
+    loadConversations();
+  }, [currentUser?.id]);
+
   const [selectedChat, setSelectedChat] = useState(null);
 
   const handleSelect = (c) => {
