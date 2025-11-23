@@ -14,23 +14,18 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
     const loadParticipants = async () => {
       if (!isGroup || !selectedChat?.conversacionId) {
         setParticipants([]);
-        console.log('⚠️ No se cargan participantes - isGroup:', isGroup, 'conversacionId:', selectedChat?.conversacionId);
         return;
       }
 
-      console.log('🔄 Cargando participantes para conversación:', selectedChat.conversacionId);
       setLoading(true);
       try {
         const response = await conversationService.listarParticipantes(selectedChat.conversacionId);
         const participantsList = (response?.data ?? response) || [];
         setParticipants(participantsList);
-        console.log('✅ Participantes cargados:', participantsList.length, participantsList);
-      } catch (error) {
-        console.error('❌ Error cargando participantes:', error);
+      } catch {
         // Fallback a los participantes del chat seleccionado
         const fallbackParticipants = selectedChat?.participantes || [];
         setParticipants(fallbackParticipants);
-        console.log('⚠️ Usando fallback con', fallbackParticipants.length, 'participantes');
       } finally {
         setLoading(false);
       }
@@ -50,7 +45,6 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
         )
       );
       
-      console.log('✅ Participantes agregados exitosamente');
       setShowAddModal(false);
       
       // Recargar participantes usando el servicio
@@ -59,8 +53,7 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
       setParticipants(participantsList);
       
       onParticipantsUpdate();
-    } catch (error) {
-      console.error('Error agregando participantes:', error);
+    } catch {
       alert('No se pudieron agregar los participantes. Intenta de nuevo.');
     }
   };
@@ -74,7 +67,6 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
 
     try {
       await conversationService.eliminarParticipanteDeGrupo(selectedChat.conversacionId, userId);
-      console.log('✅ Participante eliminado exitosamente');
       
       // Recargar participantes usando el servicio
       const response = await conversationService.listarParticipantes(selectedChat.conversacionId);
@@ -82,8 +74,7 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
       setParticipants(participantsList);
       
       onParticipantsUpdate();
-    } catch (error) {
-      console.error('Error eliminando participante:', error);
+    } catch {
       alert('No se pudo eliminar el participante. Intenta de nuevo.');
     }
   };
@@ -91,7 +82,6 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
   // Determinar si el usuario actual es el creador del grupo (primera persona que se unió)
   const isGroupCreator = () => {
     if (!isGroup || !participants || participants.length === 0) {
-      console.log('❌ No es creador - Grupo:', isGroup, 'Participantes:', participants?.length);
       return false;
     }
     
@@ -103,17 +93,7 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
     
     const creator = sortedParticipants[0];
     const creatorId = creator?.usuarioId || creator?.usuario?.id;
-    const isCreator = creatorId === currentUserId;
-    
-    console.log('🔍 Verificando creador:', {
-      currentUserId,
-      creatorId,
-      isCreator,
-      creator,
-      totalParticipants: participants.length
-    });
-    
-    return isCreator;
+    return creatorId === currentUserId;
   };
 
   // Si hay un chat seleccionado (grupo o privado), mostrar info del chat
