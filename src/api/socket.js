@@ -17,6 +17,24 @@ export function onError(cb) {
   socket.on("errorMensaje", cb);
   socket.on("errorMessage", cb);
 }
+export function connect() {
+  if (!socket.connected) socket.connect();
+}
+
+export function disconnect() {
+  if (socket.connected) socket.disconnect();
+}
+
+
+export function joinConversation(conversacionId, userId) {
+  if (!socket.connected) connect();
+  socket.emit("joinConversacion", { conversacionId, userId });
+}
+
+export function sendMessage(payload, ack) {
+  if (!socket.connected) connect();
+  socket.emit("enviarMensaje", payload, ack);
+}
 
 // Nuevos eventos / helpers para estados y participantes
 export function onEstadoMensaje(cb) {
@@ -49,4 +67,11 @@ export function offParticipanteUnido(cb) {
 export function offParticipanteActivo(cb) {
   socket.off("participanteActivo", cb);
 }
-// ...existing code...
+
+
+
+
+
+
+
+
