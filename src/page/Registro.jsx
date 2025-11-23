@@ -91,144 +91,178 @@ const Registro = () => {
     const esValido =
         Object.values(formData).every((v) => v.trim()) &&
         Object.values(errores).every((e) => e === null);
+    
     return (
-        <div className="w-full max-w mb-8 mt-10">
-            {/* Título */}
-            <h1 className="text-display-md text-black mb-8 text-center font-sans">
-                Crear cuenta
-            </h1>
-            <form onSubmit={handleRegister} className="space-y-6">
-                <div>
-                    <label className="block text-text-medium font-semibold text-black mb-2">
-                        Nombre
-                    </label>
-                    <input
-                        type="text"
-                        name="nombre"
-                        placeholder="Nombre"
-                        value={formData.nombre}
-                        onChange={handleChange}
-                        onBlur={(e) => validarCampo("nombre", e.target.value)}
-                        className={`w-full px-4 py-2 rounded-inputMedium font-sans text-base border-1 transition-colors ${errores.nombre
-                            ? "border-error bg-red-50"
-                            : "border-neutral-1 bg-card focus:border-primary"
-                            } focus:outline-none`}
-                    />
-                    {errores.nombre && (
-                        <p className="mt-1 text-text-small font-semibold text-error">
-                            {errores.nombre}
-                        </p>
-                    )}
+        <div className="w-full h-screen flex items-center justify-center overflow-hidden">
+            <div className="w-full max-w-2xl px-6">
+                {/* Título y subtítulo */}
+                <div className="text-center mb-6">
+                    <h1 className="text-display-md text-black mb-2 font-sans">
+                        Crear cuenta
+                    </h1>
+                    <p className="text-text-base text-neutral-2">
+                        Ingresa tus datos a continuación<br />
+                        para comenzar a usar Workly
+                    </p>
                 </div>
-
-                <div>
-                    <label className="block text-text-medium font-semibold text-black mb-2">
-                        Correo electrónico
-                    </label>
-                    <input
-                        type="email"
-                        name="email"
-                        placeholder="Correo"
-                        value={formData.email}
-                        onChange={handleChange}
-                        onBlur={(e) => validarCampo("email", e.target.value)}
-                        className={`w-full px-4 py-2 rounded-inputMedium font-sans text-base border-2 transition-colors ${errores.email
-                            ? "border-error bg-red-50"
-                            : "border-neutral-1 bg-card focus:border-primary"
-                            } focus:outline-none`}
-                    />
-                    {errores.email && (
-                        <p className="mt-1 text-text-small font-semibold text-error">
-                            {errores.email}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-text-medium font-semibold text-black mb-2">
-                        Contraseña
-                    </label>
-                    <div className="relative">
+                
+                <form onSubmit={handleRegister} className="space-y-4">
+                    {/* Campo Nombre */}
+                    <div>
+                        <label className="block text-text-base font-semibold text-black mb-1">
+                            Nombre completo
+                        </label>
                         <input
-                            type={visibility.contrasena ? "text" : "password"}
-                            name="contrasena"
-                            placeholder="Contraseña"
-                            value={formData.contrasena}
+                            type="text"
+                            name="nombre"
+                            placeholder="Juan Pérez"
+                            value={formData.nombre}
                             onChange={handleChange}
-                            onBlur={(e) => validarCampo("contrasena", e.target.value)}
-                            className={`w-full px-4 py-2 rounded-inputMedium font-sans text-base border-2 transition-colors pr-12 ${errores.contrasena
-                                ? "border-error bg-red-50"
-                                : "border-neutral-1 bg-card focus:border-primary"
-                                } focus:outline-none`}
+                            onBlur={(e) => validarCampo("nombre", e.target.value)}
+                            className={`w-full px-4 py-2.5 rounded-input font-sans text-text-base border-2 transition-colors ${
+                                errores.nombre
+                                    ? "border-error bg-red-50"
+                                    : "border-neutral-1 bg-light focus:border-primary"
+                            } focus:outline-none`}
                         />
-                        <IconButton
-                            icon={visibility.contrasena ? <EyeOff size={20} /> : <Eye size={20} />}
-                            variant="ghost"
-                            onClick={() => setVisibility(prev => ({ ...prev, contrasena: !prev.contrasena }))}
-                            className="absolute right-4 top-1/2 -translate-y-1/2"
-                        />
+                        {errores.nombre && (
+                            <p className="mt-0.5 text-text-sm font-semibold text-error">
+                                {errores.nombre}
+                            </p>
+                        )}
                     </div>
-                    {errores.contrasena && (
-                        <p className="mt-1 text-text-small font-semibold text-error">
-                            {errores.contrasena}
-                        </p>
-                    )}
-                </div>
 
-                {/* Campo Confirmar Contraseña */}
-                <div>
-                    <label className="block text-text-medium font-semibold text-black mb-2">
-                        Confirmar contraseña
-                    </label>
-                    <div className="relative">
+                    {/* Campo Email */}
+                    <div>
+                        <label className="block text-text-base font-semibold text-black mb-1">
+                            Correo electrónico
+                        </label>
                         <input
-                            type={visibility.confirmarContrasena ? "text" : "password"}
-                            name="confirmarContrasena"
-                            placeholder="Confirmar contraseña"
-                            value={formData.confirmarContrasena}
+                            type="email"
+                            name="email"
+                            placeholder="nombre@ejemplo.com"
+                            value={formData.email}
                             onChange={handleChange}
-                            onBlur={(e) =>
-                                validarCampo("confirmarContrasena", e.target.value)
-                            }
-                            className={`w-full px-4 py-2 rounded-inputMedium font-sans text-base border-2 transition-colors pr-12 ${errores.confirmarContrasena
-                                ? "border-error bg-red-50"
-                                : "border-neutral-1 bg-card focus:border-primary"
-                                } focus:outline-none`}
+                            onBlur={(e) => validarCampo("email", e.target.value)}
+                            className={`w-full px-4 py-2.5 rounded-input font-sans text-text-base border-2 transition-colors ${
+                                errores.email
+                                    ? "border-error bg-red-50"
+                                    : "border-neutral-1 bg-light focus:border-primary"
+                            } focus:outline-none`}
                         />
-                        <IconButton
-                            icon={visibility.contrasena ? <EyeOff size={20} /> : <Eye size={20} />}
-                            variant="ghost"
-                            onClick={() => setVisibility(prev => ({ ...prev, contrasena: !prev.contrasena }))}
-                            className="absolute right-4 top-1/2 -translate-y-1/2"
-                        />
+                        {errores.email && (
+                            <p className="mt-0.5 text-text-sm font-semibold text-error">
+                                {errores.email}
+                            </p>
+                        )}
                     </div>
-                    {errores.confirmarContrasena && (
-                        <p className="mt-1 text-text-small font-semibold text-error">
-                            {errores.confirmarContrasena}
+
+                    {/* Contraseñas en grid 2 columnas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Campo Contraseña */}
+                        <div>
+                            <label className="block text-text-base font-semibold text-black mb-1">
+                                Contraseña
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={visibility.contrasena ? "text" : "password"}
+                                    name="contrasena"
+                                    placeholder=""
+                                    value={formData.contrasena}
+                                    onChange={handleChange}
+                                    onBlur={(e) => validarCampo("contrasena", e.target.value)}
+                                    className={`w-full px-4 py-2.5 rounded-input font-sans text-text-base border-2 transition-colors pr-12 ${
+                                        errores.contrasena
+                                            ? "border-error bg-red-50"
+                                            : "border-neutral-1 bg-light focus:border-primary"
+                                    } focus:outline-none`}
+                                />
+                                <IconButton
+                                    icon={visibility.contrasena ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    variant="ghost"
+                                    onClick={() => setVisibility(prev => ({ ...prev, contrasena: !prev.contrasena }))}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                                />
+                            </div>
+                            {errores.contrasena && (
+                                <p className="mt-0.5 text-text-sm font-semibold text-error">
+                                    {errores.contrasena}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Campo Confirmar Contraseña */}
+                        <div>
+                            <label className="block text-text-base font-semibold text-black mb-1">
+                                Confirmar
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={visibility.confirmarContrasena ? "text" : "password"}
+                                    name="confirmarContrasena"
+                                    placeholder=""
+                                    value={formData.confirmarContrasena}
+                                    onChange={handleChange}
+                                    onBlur={(e) =>
+                                        validarCampo("confirmarContrasena", e.target.value)
+                                    }
+                                    className={`w-full px-4 py-2.5 rounded-input font-sans text-text-base border-2 transition-colors pr-12 ${
+                                        errores.confirmarContrasena
+                                            ? "border-error bg-red-50"
+                                            : "border-neutral-1 bg-light focus:border-primary"
+                                    } focus:outline-none`}
+                                />
+                                <IconButton
+                                    icon={visibility.confirmarContrasena ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    variant="ghost"
+                                    onClick={() => setVisibility(prev => ({ ...prev, confirmarContrasena: !prev.confirmarContrasena }))}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                                />
+                            </div>
+                            {errores.confirmarContrasena && (
+                                <p className="mt-0.5 text-text-sm font-semibold text-error">
+                                    {errores.confirmarContrasena}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <p className="text-text-sm text-neutral-2">
+                            Al registrarte, aceptas los Términos de uso y Política de Privacidad de workly.
                         </p>
-                    )}
-                </div>
-                <div className="justify-center flex ">
-                    <Button type="submit" variant="primary" size="medium" disabled={loading || !esValido}
-                    className="mx-auto block w-[300px] p-1" >
-                        {loading ? "Creando..." : "Crear Cuenta"}
-                    </Button>
-                </div>
+                    </div>
 
-            </form>
+                    {/* Botón de envío */}
+                    <div className="pt-2">
+                        <Button 
+                            type="submit" 
+                            variant="primary" 
+                            size="medium" 
+                            disabled={loading || !esValido}
+                            className="w-full"
+                        >
+                            {loading ? "Creando..." : "Registrarse"}
+                        </Button>
+                    </div>
+                </form>
 
-            {msg && (
-                <div
-                    className={`mt-6 p-4 rounded-input text-text-small font-semibold ${msg.tipo === "error"
-                        ? "bg-red-50 text-error border border-error"
-                        : "bg-green-50 text-primary border border-primary"
+                {/* Mensaje de éxito/error */}
+                {msg && (
+                    <div
+                        className={`mt-4 p-3 rounded-input text-text-sm font-semibold ${
+                            msg.tipo === "error"
+                                ? "bg-red-50 text-error border border-error"
+                                : "bg-green-50 text-primary border border-primary"
                         }`}
-                >
-                    {msg.texto}
-                </div>
-            )}
+                    >
+                        {msg.texto}
+                    </div>
+                )}
+            </div>
         </div>
-    )
-}
+    );
+};
 
-export default Registro
+export default Registro;
