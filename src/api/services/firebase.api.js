@@ -31,7 +31,7 @@ export const firebaseAuthService = {
     } catch (err) {
       return { success: false, message: err.message };
     }
-  },
+  },  
 
   // Cerrar sesión
   async logout() {
