@@ -32,6 +32,13 @@ export function joinConversation(conversacionId, userId) {
   socket.emit("joinConversacion", { conversacionId, userId });
 }
 
+export function joinMultipleConversations(conversacionIds, userId) {
+  if (!socket.connected) connect();
+  conversacionIds.forEach(conversacionId => {
+    socket.emit("joinConversacion", { conversacionId, userId });
+  });
+}
+
 export function sendMessage(payload, ack) {
   if (!socket.connected) connect();
   socket.emit("enviarMensaje", payload, ack);
