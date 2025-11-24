@@ -5,6 +5,7 @@ import { FiX } from 'react-icons/fi';
 const GroupCreateModal = ({ isOpen, onClose, onCreate, users = [], currentUser }) => {
   const [name, setName] = useState('');
   const [selected, setSelected] = useState([]);
+  const [isCreating, setIsCreating] = useState(false);
   const nameRef = useRef(null);
 
   // Reset form when modal opens
@@ -13,6 +14,7 @@ const GroupCreateModal = ({ isOpen, onClose, onCreate, users = [], currentUser }
       setTimeout(() => {
         setName('');
         setSelected(currentUser ? [currentUser.id] : []);
+        setIsCreating(false);
         nameRef.current?.focus();
       }, 0);
     }
@@ -32,12 +34,18 @@ const GroupCreateModal = ({ isOpen, onClose, onCreate, users = [], currentUser }
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isCreating) return;
     if (!name.trim()) return alert('El nombre del grupo es requerido');
     if (selected.length < 2) return alert('Selecciona al menos 2 integrantes para crear un grupo');
 
-    onCreate({ titulo: name.trim(), integrantes: selected });
+    setIsCreating(true);
+    try {
+      await onCreate({ titulo: name.trim(), integrantes: selected });
+    } catch {
+      setIsCreating(false);
+    }
   };
 
   const availableUsers = users.filter(u => u.id !== currentUser?.id);
@@ -74,6 +82,7 @@ const GroupCreateModal = ({ isOpen, onClose, onCreate, users = [], currentUser }
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Equipo de Desarrollo"
               aria-label="Nombre del grupo"
+              disabled={isCreating}
             />
           </div>
 
@@ -99,6 +108,7 @@ const GroupCreateModal = ({ isOpen, onClose, onCreate, users = [], currentUser }
                         checked={selected.includes(u.id)}
                         onChange={() => toggle(u.id)}
                         className="w-4 h-4 text-primary border-neutral-1 rounded focus:ring-primary focus:ring-2"
+                        disabled={isCreating}
                       />
                       <span className="text-text-base text-black">
                         {u.nombre || u.name || `Usuario ${u.id}`}
@@ -116,14 +126,16 @@ const GroupCreateModal = ({ isOpen, onClose, onCreate, users = [], currentUser }
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-text-base font-medium text-neutral-2 hover:bg-neutral-1 rounded-button transition-colors"
+              disabled={isCreating}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-text-base font-medium bg-primary text-light rounded-button hover:opacity-90 transition-opacity"
+              className="px-4 py-2 text-text-base font-medium bg-primary text-light rounded-button hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isCreating}
             >
-              Crear Grupo
+              {isCreating ? 'Creando...' : 'Crear Grupo'}
             </button>
           </div>
         </form>

@@ -79,9 +79,19 @@ const UserInfo = ({ selectedChat = null, currentUserId = null, allUsers = [], on
     }
   };
   
-  // Determinar si el usuario actual es el creador del grupo (primera persona que se unió)
+  // Determinar si el usuario actual es el creador del grupo
   const isGroupCreator = () => {
-    if (!isGroup || !participants || participants.length === 0) {
+    if (!isGroup) {
+      return false;
+    }
+    
+    // Si el chat tiene creadorId (grupos recién creados), usarlo
+    if (selectedChat?.creadorId) {
+      return selectedChat.creadorId === currentUserId;
+    }
+    
+    // Fallback: usar la lógica de primera persona que se unió
+    if (!participants || participants.length === 0) {
       return false;
     }
     

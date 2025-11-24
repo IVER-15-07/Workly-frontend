@@ -190,13 +190,22 @@ const VentanaChat = () => {
       const groupChats = (groupResponse?.data ?? groupResponse) || [];
       const uniqueConversations = formatConversations(privateChats, groupChats);
 
-      setChats(uniqueConversations);
+      // Preservar creadorId de los chats existentes
+      const conversationsWithCreator = uniqueConversations.map(newChat => {
+        const existingChat = chats.find(c => c.conversacionId === newChat.conversacionId);
+        if (existingChat?.creadorId) {
+          return { ...newChat, creadorId: existingChat.creadorId };
+        }
+        return newChat;
+      });
 
-      // Actualizar el chat seleccionado con los nuevos datos
+      setChats(conversationsWithCreator);
+
+      // Actualizar el chat seleccionado con los nuevos datos, preservando creadorId
       if (selectedChat) {
-        const updatedChat = uniqueConversations.find(c => c.conversacionId === selectedChat.conversacionId);
+        const updatedChat = conversationsWithCreator.find(c => c.conversacionId === selectedChat.conversacionId);
         if (updatedChat) {
-          setSelectedChat(updatedChat);
+          setSelectedChat({ ...updatedChat, creadorId: selectedChat.creadorId || updatedChat.creadorId });
         }
       }
     } catch {
@@ -279,14 +288,16 @@ const VentanaChat = () => {
         tipo: 'grupal',
         participantes: participantes,
         unread: 0,
-        lastMessage: newGroup.mensajes?.[newGroup.mensajes.length - 1] || { contenido: '', creadoEn: Date.now() }
+        lastMessage: newGroup.mensajes?.[newGroup.mensajes.length - 1] || { contenido: '', creadoEn: Date.now() },
+        creadorId: currentUser.id // Guardar el ID del creador
       };
       
       setChats((prev) => [groupChat, ...(prev || [])]);
       setSelectedChat(groupChat);
       setShowGroupModal(false);
-    } catch {
+    } catch (error) {
       alert('No se pudo crear el grupo. Intenta de nuevo.');
+      throw error; // Re-lanzar el error para que el modal lo maneje
     }
   };
 

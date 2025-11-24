@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const URL = import.meta.env.VITE_API_WS || "http://localhost:3000";
+const URL = "https://unfacaded-nylah-staid.ngrok-free.dev";
 
 export const socket = io(URL, {
   autoConnect: false,
