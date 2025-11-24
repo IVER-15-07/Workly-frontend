@@ -5,6 +5,7 @@ import Chat from '../page/Chat.jsx';
 import UserInfo from '../components/UserInfo.jsx';
 import GroupCreateModal from '../components/GroupCreateModal.jsx';
 import { conversationService } from '../api/services/conversation.api';
+import { joinMultipleConversations, onReceiveMessage, offReceiveMessage } from '../api/socket';
 
 const VentanaChat = () => {
   const theme = useTheme();
@@ -99,6 +100,12 @@ const VentanaChat = () => {
         const uniqueConversations = formatConversations(privateChats, groupChats);
 
         setChats(uniqueConversations);
+
+        // Unirse a todas las conversaciones del usuario
+        const conversacionIds = uniqueConversations.map(c => c.conversacionId);
+        if (conversacionIds.length > 0) {
+          joinMultipleConversations(conversacionIds, currentUser.id);
+        }
       } catch {
         // Error silencioso
       }
@@ -106,6 +113,66 @@ const VentanaChat = () => {
 
     loadConversations();
   }, [currentUser?.id]);
+
+  // Listener global para recibir mensajes de conversaciones nuevas
+  useEffect(() => {
+    const handleNewMessage = async (mensaje) => {
+      // Si el mensaje es de una conversación que no tenemos, cargarla
+      const conversacionId = mensaje.conversacionId;
+      const exists = chats.find(chat => chat.conversacionId === conversacionId);
+      
+      if (!exists && conversacionId) {
+        try {
+          // Cargar información de la conversación nueva
+          const [privateResponse, groupResponse] = await Promise.all([
+            conversationService.getListChatPrivado(currentUser.id),
+            conversationService.getListChatGrupal(currentUser.id)
+          ]);
+
+          const privateChats = (privateResponse?.data ?? privateResponse) || [];
+          const groupChats = (groupResponse?.data ?? groupResponse) || [];
+          
+          // Buscar la conversación nueva
+          const newPrivateChat = privateChats.find(c => c.conversacionId === conversacionId);
+          const newGroupChat = groupChats.find(c => c.conversacionId === conversacionId);
+          const newChat = newPrivateChat || newGroupChat;
+          
+          if (newChat) {
+            const formattedChat = newPrivateChat ? {
+              id: newChat.conversacionId,
+              conversacionId: newChat.conversacionId,
+              titulo: newChat.participante?.nombre || newChat.titulo,
+              nombre: newChat.participante?.nombre || newChat.titulo,
+              isGroup: false,
+              participante: newChat.participante,
+              lastMessage: newChat.ultimoMensaje,
+              unread: 0
+            } : {
+              id: newChat.conversacionId,
+              conversacionId: newChat.conversacionId,
+              titulo: newChat.titulo,
+              isGroup: true,
+              participantes: newChat.participantes,
+              lastMessage: newChat.ultimoMensaje,
+              unread: 0
+            };
+            
+            setChats((prev) => [formattedChat, ...prev]);
+            // Unirse a la conversación nueva
+            joinMultipleConversations([conversacionId], currentUser.id);
+          }
+        } catch {
+          // Error silencioso
+        }
+      }
+    };
+
+    onReceiveMessage(handleNewMessage);
+    
+    return () => {
+      offReceiveMessage(handleNewMessage);
+    };
+  }, [chats, currentUser.id]);
 
   const [selectedChat, setSelectedChat] = useState(null);
 
@@ -220,6 +287,7 @@ const VentanaChat = () => {
       setShowGroupModal(false);
     } catch {
       alert('No se pudo crear el grupo. Intenta de nuevo.');
+      throw new Error('Error al crear grupo'); // Re-lanzar para que el modal maneje el error
     }
   };
 

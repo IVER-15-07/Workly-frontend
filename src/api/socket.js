@@ -1,7 +1,6 @@
 import { io } from "socket.io-client";
 
-const URL = import.meta.env.VITE_API_WS || "http://localhost:3000";
-
+const URL = "https://unfacaded-nylah-staid.ngrok-free.dev";
 export const socket = io(URL, {
   autoConnect: false,
   transports: ["websocket"],
@@ -30,6 +29,13 @@ export function disconnect() {
 export function joinConversation(conversacionId, userId) {
   if (!socket.connected) connect();
   socket.emit("joinConversacion", { conversacionId, userId });
+}
+
+export function joinMultipleConversations(conversacionIds, userId) {
+  if (!socket.connected) connect();
+  conversacionIds.forEach(conversacionId => {
+    socket.emit("joinConversacion", { conversacionId, userId });
+  });
 }
 
 export function sendMessage(payload, ack) {
