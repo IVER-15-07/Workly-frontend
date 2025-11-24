@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from "react";
 import { FiSend } from 'react-icons/fi';
 import {
   connect,
-  disconnect,
   joinConversation,
   sendMessage,
   onConversationHistory,
@@ -15,7 +14,7 @@ import {
 } from "../api/socket";
 import { conversationService } from "../api/services/conversation.api";
 
-const Chat = ({ selectedChat = null }) => {
+const Chat = ({ selectedChat = null, onMessageSent }) => {
   const [me] = useState(() => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
@@ -24,9 +23,9 @@ const Chat = ({ selectedChat = null }) => {
       return 1;
     }
   });
-  const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const prevChatIdRef = useRef(null);
 
   const containerRef = useRef(null);
 
@@ -36,12 +35,10 @@ const Chat = ({ selectedChat = null }) => {
 
     // Configurar listeners
     const handleHistory = (hist) => {
-      console.log("📥 Historial recibido:", hist);
       setMessages(hist || []);
     };
 
     const handleReceive = (msg) => {
-      console.log("📨 Mensaje recibido:", msg);
       setMessages((prev) => {
         // evitar duplicados por ack + broadcast
         if (prev.some(p => p.id && msg.id && p.id === msg.id)) return prev;
@@ -49,78 +46,87 @@ const Chat = ({ selectedChat = null }) => {
       });
     };
 
-    const handleError = (e) => console.error("❌ WS error:", e);
+    const handleError = () => {
+      // Error silencioso
+    };
 
     onConversationHistory(handleHistory);
     onReceiveMessage(handleReceive);
     onError(handleError);
 
     return () => {
-      // Limpiar listeners al desmontar (usar helpers consistentes)
+      // Solo limpiar listeners, NO desconectar el socket
+      // El socket debe permanecer conectado para recibir mensajes de otros chats
       offConversationHistory(handleHistory);
       offReceiveMessage(handleReceive);
       offError(handleError);
-      disconnect();
     };
   }, []);
 
   // when selectedChat changes, load messages and join its conversation
   useEffect(() => {
-    if (!selectedChat) {
-      setConversation(null);
-      setMessages([]);
-      return;
-    }
-
-    setConversation(selectedChat);
-
-    (async () => {
-      try {
-        // Cargar mensajes
-        const response = await conversationService.getMessages(selectedChat.id);
-        const msgs = response?.data ?? response;
-        setMessages(Array.isArray(msgs) ? msgs : []);
-
-        // Unirse a la room sin desconectar (joinConversation helper conecta si hace falta)
-        joinConversation(selectedChat.id, me);
-      } catch (err) {
-        console.error('Error loading conversation:', err);
-        setMessages([]);
+    const currentChatId = selectedChat?.id;
+    
+    // Si el chat cambió, cargar mensajes
+    if (currentChatId !== prevChatIdRef.current) {
+      prevChatIdRef.current = currentChatId;
+      
+      if (!selectedChat) {
+        // Usar setTimeout para evitar setState síncrono
+        const timer = setTimeout(() => setMessages([]), 0);
+        return () => clearTimeout(timer);
       }
-    })();
+
+      (async () => {
+        try {
+          // Cargar mensajes
+          const response = await conversationService.getMessages(selectedChat.id);
+          const msgs = response?.data ?? response;
+          setMessages(Array.isArray(msgs) ? msgs : []);
+
+          // Unirse a la room
+          joinConversation(selectedChat.id, me);
+        } catch {
+          setMessages([]);
+        }
+      })();
+    }
   }, [selectedChat, me]);
 
   useEffect(() => {
-    console.log("🔄 Messages changed, total:", messages.length);
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
-      console.log("📜 Scroll ajustado");
     }
   }, [messages]);
 
   function handleSend() {
-    if (!conversation) return alert("Primero crea/únete a la conversación");
+    if (!selectedChat) return alert("Primero crea/únete a la conversación");
     if (!text.trim()) return;
 
     const payload = {
       contenido: text.trim(),
       remitenteId: Number(me),
-      conversacionId: Number(conversation.id),
+      conversacionId: Number(selectedChat.id),
     };
-
-    console.log("📤 Enviando mensaje:", payload);
 
     // usar ack para recibir el mensaje guardado por el servidor
     sendMessage(payload, (resp) => {
       if (!resp) return;
-      if (resp.ok && resp.data) {
-        const saved = resp.data;
+      if (resp.success && resp.mensaje) {
+        const saved = resp.mensaje;
         setMessages((prev) => {
           if (prev.some(p => p.id && saved.id && p.id === saved.id)) return prev;
           return [...prev, saved];
         });
-      } else {
-        console.error("Error al enviar mensaje (ack):", resp.error || resp);
+        
+        // Notificar al padre para actualizar el lastMessage en la lista de chats
+        if (onMessageSent) {
+          onMessageSent(selectedChat.id, {
+            contenido: saved.contenido,
+            creadoEn: saved.creadoEn,
+            remitente: saved.remitente
+          });
+        }
       }
     });
 
@@ -128,8 +134,8 @@ const Chat = ({ selectedChat = null }) => {
   }
 
   // Get participants for group chat
-  const participants = conversation?.participantes || [];
-  const isGroupChat = conversation?.isGroup || conversation?.tipo === 'grupal';
+  const participants = selectedChat?.participantes || [];
+  const isGroupChat = selectedChat?.isGroup || selectedChat?.tipo === 'grupal';
   const participantUsers = participants
     .map(p => p.usuario || p)
     .filter(u => u && u.id !== me);
@@ -143,7 +149,7 @@ const Chat = ({ selectedChat = null }) => {
       <div className="mb-3 pb-3 border-b border-neutral-1">
         <div className="flex items-center justify-between">
           <h2 className="text-text-lg font-semibold m-0">
-            {conversation?.titulo || conversation?.nombre || 'Selecciona un chat'}
+            {selectedChat?.titulo || selectedChat?.nombre || 'Selecciona un chat'}
           </h2>
           
           {/* Group participants - Right side */}

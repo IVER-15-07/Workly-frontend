@@ -5,6 +5,7 @@ import Chat from '../page/Chat.jsx';
 import UserInfo from '../components/UserInfo.jsx';
 import GroupCreateModal from '../components/GroupCreateModal.jsx';
 import { conversationService } from '../api/services/conversation.api';
+import { joinMultipleConversations, onReceiveMessage, offReceiveMessage } from '../api/socket';
 
 const VentanaChat = () => {
   const theme = useTheme();
@@ -20,6 +21,53 @@ const VentanaChat = () => {
 
   const [showGroupModal, setShowGroupModal] = useState(false);
 
+  // Función auxiliar para formatear conversaciones
+  const formatConversations = (privateChats, groupChats) => {
+    // Filtrar solo chats privados que tienen mensajes
+    const privateChatsWithMessages = privateChats.filter(chat => chat.ultimoMensaje);
+
+    // Agrupar chats privados por participante (solo la conversación más reciente)
+    const privateChatsMap = new Map();
+    privateChatsWithMessages.forEach(chat => {
+      const participantId = chat.participante?.id;
+      if (!participantId) return;
+      
+      const existing = privateChatsMap.get(participantId);
+      if (!existing || chat.conversacionId > existing.conversacionId) {
+        privateChatsMap.set(participantId, chat);
+      }
+    });
+
+    const formattedPrivateChats = Array.from(privateChatsMap.values()).map(chat => ({
+      id: chat.conversacionId,
+      conversacionId: chat.conversacionId,
+      titulo: chat.participante?.nombre || chat.titulo,
+      nombre: chat.participante?.nombre || chat.titulo,
+      isGroup: false,
+      participante: chat.participante,
+      lastMessage: chat.ultimoMensaje,
+      unread: 0
+    }));
+
+    const formattedGroupChats = groupChats.map(chat => ({
+      id: chat.conversacionId,
+      conversacionId: chat.conversacionId,
+      titulo: chat.titulo,
+      isGroup: true,
+      participantes: chat.participantes,
+      lastMessage: chat.ultimoMensaje,
+      unread: 0
+    }));
+
+    // Combinar y eliminar duplicados por conversacionId
+    const allConversations = [...formattedPrivateChats, ...formattedGroupChats];
+    return allConversations.reduce((acc, current) => {
+      const exists = acc.find(item => item.conversacionId === current.conversacionId);
+      if (!exists) acc.push(current);
+      return acc;
+    }, []);
+  };
+
   // Cargar lista de usuarios al iniciar
   useEffect(() => {
     const loadUsers = async () => {
@@ -29,8 +77,8 @@ const VentanaChat = () => {
         if (Array.isArray(usuarios)) {
           setAllUsers(usuarios);
         }
-      } catch (error) {
-        console.error('Error loading users:', error);
+      } catch {
+        // Error silencioso
       }
     };
     loadUsers();
@@ -42,7 +90,6 @@ const VentanaChat = () => {
       if (!currentUser?.id) return;
 
       try {
-        // Cargar chats privados y grupales en paralelo
         const [privateResponse, groupResponse] = await Promise.all([
           conversationService.getListChatPrivado(currentUser.id),
           conversationService.getListChatGrupal(currentUser.id)
@@ -50,73 +97,82 @@ const VentanaChat = () => {
 
         const privateChats = (privateResponse?.data ?? privateResponse) || [];
         const groupChats = (groupResponse?.data ?? groupResponse) || [];
-
-        console.log('📦 Private chats del backend:', privateChats);
-        console.log('📦 Group chats del backend:', groupChats);
-
-        // Filtrar solo chats que tienen mensajes
-        const privateChatsWithMessages = privateChats.filter(chat => chat.ultimoMensaje);
-
-        // Formatear y agrupar chats privados por participante
-        // Solo mostrar la conversación más reciente con cada persona
-        const privateChatsMap = new Map();
-        
-        privateChatsWithMessages.forEach(chat => {
-          const participantId = chat.participante?.id;
-          if (!participantId) return;
-          
-          // Si no existe o esta conversación es más reciente, actualizar
-          const existing = privateChatsMap.get(participantId);
-          if (!existing || chat.conversacionId > existing.conversacionId) {
-            privateChatsMap.set(participantId, chat);
-          }
-        });
-
-        const formattedPrivateChats = Array.from(privateChatsMap.values()).map(chat => ({
-          id: chat.conversacionId,
-          conversacionId: chat.conversacionId,
-          titulo: chat.participante?.nombre || chat.titulo,
-          nombre: chat.participante?.nombre || chat.titulo,
-          isGroup: false,
-          participante: chat.participante,
-          lastMessage: chat.ultimoMensaje,
-          unread: 0
-        }));
-
-        // Formatear grupos
-        const formattedGroupChats = groupChats.map(chat => ({
-          id: chat.conversacionId,
-          conversacionId: chat.conversacionId,
-          titulo: chat.titulo,
-          isGroup: true,
-          participantes: chat.participantes,
-          lastMessage: chat.ultimoMensaje,
-          unread: 0
-        }));
-
-        // Combinar y eliminar duplicados por conversacionId
-        const allConversations = [...formattedPrivateChats, ...formattedGroupChats];
-        
-        // Eliminar duplicados
-        const uniqueConversations = allConversations.reduce((acc, current) => {
-          const exists = acc.find(item => item.conversacionId === current.conversacionId);
-          if (!exists) {
-            acc.push(current);
-          }
-          return acc;
-        }, []);
+        const uniqueConversations = formatConversations(privateChats, groupChats);
 
         setChats(uniqueConversations);
-        
-        console.log('✅ Conversaciones únicas cargadas:', uniqueConversations.length);
-        console.log('📋 Conversaciones:', uniqueConversations);
-      } catch (error) {
-        console.error('Error loading conversations:', error);
+
+        // Unirse a todas las conversaciones del usuario
+        const conversacionIds = uniqueConversations.map(c => c.conversacionId);
+        if (conversacionIds.length > 0) {
+          joinMultipleConversations(conversacionIds, currentUser.id);
+        }
+      } catch {
+        // Error silencioso
       }
     };
 
     loadConversations();
   }, [currentUser?.id]);
+
+  // Listener global para recibir mensajes de conversaciones nuevas
+  useEffect(() => {
+    const handleNewMessage = async (mensaje) => {
+      // Si el mensaje es de una conversación que no tenemos, cargarla
+      const conversacionId = mensaje.conversacionId;
+      const exists = chats.find(chat => chat.conversacionId === conversacionId);
+      
+      if (!exists && conversacionId) {
+        try {
+          // Cargar información de la conversación nueva
+          const [privateResponse, groupResponse] = await Promise.all([
+            conversationService.getListChatPrivado(currentUser.id),
+            conversationService.getListChatGrupal(currentUser.id)
+          ]);
+
+          const privateChats = (privateResponse?.data ?? privateResponse) || [];
+          const groupChats = (groupResponse?.data ?? groupResponse) || [];
+          
+          // Buscar la conversación nueva
+          const newPrivateChat = privateChats.find(c => c.conversacionId === conversacionId);
+          const newGroupChat = groupChats.find(c => c.conversacionId === conversacionId);
+          const newChat = newPrivateChat || newGroupChat;
+          
+          if (newChat) {
+            const formattedChat = newPrivateChat ? {
+              id: newChat.conversacionId,
+              conversacionId: newChat.conversacionId,
+              titulo: newChat.participante?.nombre || newChat.titulo,
+              nombre: newChat.participante?.nombre || newChat.titulo,
+              isGroup: false,
+              participante: newChat.participante,
+              lastMessage: newChat.ultimoMensaje,
+              unread: 0
+            } : {
+              id: newChat.conversacionId,
+              conversacionId: newChat.conversacionId,
+              titulo: newChat.titulo,
+              isGroup: true,
+              participantes: newChat.participantes,
+              lastMessage: newChat.ultimoMensaje,
+              unread: 0
+            };
+            
+            setChats((prev) => [formattedChat, ...prev]);
+            // Unirse a la conversación nueva
+            joinMultipleConversations([conversacionId], currentUser.id);
+          }
+        } catch {
+          // Error silencioso
+        }
+      }
+    };
+
+    onReceiveMessage(handleNewMessage);
+    
+    return () => {
+      offReceiveMessage(handleNewMessage);
+    };
+  }, [chats, currentUser.id]);
 
   const [selectedChat, setSelectedChat] = useState(null);
 
@@ -132,61 +188,28 @@ const VentanaChat = () => {
 
       const privateChats = (privateResponse?.data ?? privateResponse) || [];
       const groupChats = (groupResponse?.data ?? groupResponse) || [];
+      const uniqueConversations = formatConversations(privateChats, groupChats);
 
-      // Filtrar solo chats que tienen mensajes
-      const privateChatsWithMessages = privateChats.filter(chat => chat.ultimoMensaje);
-
-      const privateChatsMap = new Map();
-      privateChatsWithMessages.forEach(chat => {
-        const participantId = chat.participante?.id;
-        if (!participantId) return;
-        const existing = privateChatsMap.get(participantId);
-        if (!existing || chat.conversacionId > existing.conversacionId) {
-          privateChatsMap.set(participantId, chat);
+      // Preservar creadorId de los chats existentes
+      const conversationsWithCreator = uniqueConversations.map(newChat => {
+        const existingChat = chats.find(c => c.conversacionId === newChat.conversacionId);
+        if (existingChat?.creadorId) {
+          return { ...newChat, creadorId: existingChat.creadorId };
         }
+        return newChat;
       });
 
-      const formattedPrivateChats = Array.from(privateChatsMap.values()).map(chat => ({
-        id: chat.conversacionId,
-        conversacionId: chat.conversacionId,
-        titulo: chat.participante?.nombre || chat.titulo,
-        nombre: chat.participante?.nombre || chat.titulo,
-        isGroup: false,
-        participante: chat.participante,
-        lastMessage: chat.ultimoMensaje,
-        unread: 0
-      }));
+      setChats(conversationsWithCreator);
 
-      const formattedGroupChats = groupChats.map(chat => ({
-        id: chat.conversacionId,
-        conversacionId: chat.conversacionId,
-        titulo: chat.titulo,
-        isGroup: true,
-        participantes: chat.participantes,
-        lastMessage: chat.ultimoMensaje,
-        unread: 0
-      }));
-
-      const allConversations = [...formattedPrivateChats, ...formattedGroupChats];
-      const uniqueConversations = allConversations.reduce((acc, current) => {
-        const exists = acc.find(item => item.conversacionId === current.conversacionId);
-        if (!exists) {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
-
-      setChats(uniqueConversations);
-
-      // Actualizar el chat seleccionado con los nuevos datos
+      // Actualizar el chat seleccionado con los nuevos datos, preservando creadorId
       if (selectedChat) {
-        const updatedChat = uniqueConversations.find(c => c.conversacionId === selectedChat.conversacionId);
+        const updatedChat = conversationsWithCreator.find(c => c.conversacionId === selectedChat.conversacionId);
         if (updatedChat) {
-          setSelectedChat(updatedChat);
+          setSelectedChat({ ...updatedChat, creadorId: selectedChat.creadorId || updatedChat.creadorId });
         }
       }
-    } catch (error) {
-      console.error('Error refreshing conversations:', error);
+    } catch {
+      // Error silencioso
     }
   };
 
@@ -195,12 +218,47 @@ const VentanaChat = () => {
       setShowGroupModal(true);
       return;
     }
-    // seleccionar chat para mostrar en la ventana central
+    
+    // Si es un chat nuevo (no está en la lista), agregarlo
+    if (c && c.conversacionId) {
+      const exists = chats.find(chat => chat.conversacionId === c.conversacionId);
+      if (!exists) {
+        const newChat = {
+          id: c.conversacionId || c.id,
+          conversacionId: c.conversacionId || c.id,
+          titulo: c.titulo || c.nombre,
+          nombre: c.nombre || c.titulo,
+          isGroup: c.isGroup || false,
+          participante: c.participante,
+          participantes: c.participantes,
+          lastMessage: c.lastMessage || null,
+          unread: 0
+        };
+        setChats((prev) => [newChat, ...(prev || [])]);
+      }
+    }
+    
+    // Seleccionar chat para mostrar en la ventana central
     setSelectedChat(c);
   };
 
-  const handleNewChat = () => {
-    console.log('new chat');
+  // Función para actualizar el último mensaje de un chat
+  const handleMessageSent = (conversacionId, newMessage) => {
+    setChats((prevChats) => {
+      return prevChats.map(chat => {
+        if (chat.conversacionId === conversacionId) {
+          return {
+            ...chat,
+            lastMessage: {
+              contenido: newMessage.contenido,
+              creadoEn: newMessage.creadoEn || new Date().toISOString(),
+              remitente: newMessage.remitente
+            }
+          };
+        }
+        return chat;
+      });
+    });
   };
 
   const handleCreateGroup = async ({ titulo, integrantes }) => {
@@ -217,12 +275,11 @@ const VentanaChat = () => {
         try {
           const participantesResponse = await conversationService.listarParticipantes(newGroup.id);
           participantes = (participantesResponse?.data ?? participantesResponse) || [];
-        } catch (err) {
-          console.warn('No se pudieron cargar participantes del grupo nuevo:', err);
+        } catch {
+          // Error silencioso
         }
       }
       
-      // Add isGroup flag if not present
       const groupChat = {
         ...newGroup,
         id: newGroup.id,
@@ -231,17 +288,16 @@ const VentanaChat = () => {
         tipo: 'grupal',
         participantes: participantes,
         unread: 0,
-        lastMessage: newGroup.mensajes?.[newGroup.mensajes.length - 1] || { contenido: '', creadoEn: Date.now() }
+        lastMessage: newGroup.mensajes?.[newGroup.mensajes.length - 1] || { contenido: '', creadoEn: Date.now() },
+        creadorId: currentUser.id // Guardar el ID del creador
       };
       
       setChats((prev) => [groupChat, ...(prev || [])]);
       setSelectedChat(groupChat);
       setShowGroupModal(false);
-      
-      console.log('✅ Grupo creado con', participantes.length, 'participantes');
     } catch (error) {
-      console.error('Error creating group:', error);
       alert('No se pudo crear el grupo. Intenta de nuevo.');
+      throw error; // Re-lanzar el error para que el modal lo maneje
     }
   };
 
@@ -261,8 +317,7 @@ const VentanaChat = () => {
             currentUser={currentUser} 
             chats={chats} 
             selectedChatId={selectedChat?.id ?? null} 
-            onSelect={handleSelect} 
-            onNewChat={handleNewChat}
+            onSelect={handleSelect}
             allUsers={allUsers}
           />
         </div>
@@ -272,7 +327,7 @@ const VentanaChat = () => {
       <main className="flex-1 min-w-0">
         <div className="h-full flex flex-col">
           <div className="flex-1 overflow-auto">
-            <Chat selectedChat={selectedChat} />
+            <Chat selectedChat={selectedChat} onMessageSent={handleMessageSent} />
           </div>
         </div>
       </main>

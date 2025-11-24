@@ -25,13 +25,15 @@ const DirectSection = ({ directs = [], availableUsers = [], onSelect, selectedCh
           const msgsResponse = await conversationService.getMessages(conv.id);
           const msgs = msgsResponse?.data ?? msgsResponse;
           messages = Array.isArray(msgs) ? msgs : [];
-        } catch (err) {
-          console.warn('No se pudieron cargar mensajes:', err);
+        } catch {
+          // Error silencioso
         }
       }
 
       const directChat = {
         ...conv,
+        id: conv.id,
+        conversacionId: conv.id,
         isGroup: false,
         titulo: user.nombre,
         nombre: user.nombre,
@@ -41,8 +43,7 @@ const DirectSection = ({ directs = [], availableUsers = [], onSelect, selectedCh
       };
 
       onSelect?.(directChat);
-    } catch (err) {
-      console.error('Error abriendo conversación directa:', err);
+    } catch {
       alert('No se pudo abrir la conversación. Intenta de nuevo.');
     }
   };
